@@ -4,7 +4,7 @@
   "description": "Backend for Hotel management.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node index.js"
   },
   "author": "Navnath Vitthal Phapale",
   "license": "ISC",
