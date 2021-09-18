@@ -7,7 +7,7 @@ const userSchema = new Schema({
     phone : {type : Number , required:true},
     email : {status: {type :String, default:'Pending'}, emailID:{type : String,required:true},resetToken : {type : String,required:false},expireToken : {type : Date,required:false}},
     password : {type : String , required:true},
-    status : {type : String , required:true , default:'Pending'},
+    status : {type : String , required:true , default:'Active'},
     profilePic : {type : String , default : "NA"},
     isAdmin : {type : Boolean , default : false},
     resetPasswordToken : {type : String},

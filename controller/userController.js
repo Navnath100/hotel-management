@@ -10,7 +10,7 @@ const { User } = require('../models/users')
 // const emailApiKey = "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";
 // SgMail.setApiKey(emailApiKey)
 
-// /api/employees/
+// /api/users/
 async function getUsers(req,res,next) {
     try {
         User.find().sort({ createdAt: -1 }).then(async(data)=>{
@@ -25,7 +25,7 @@ async function getUsers(req,res,next) {
     }
     
 }
-// /api/employees/
+// /api/user/
 async function createUsers(req,res,next) {
 
     let schema = joi.object({
@@ -90,7 +90,52 @@ async function createUsers(req,res,next) {
     }
 }
 
-module.exports = { 
-    getUsers,
-    createUsers
-  }
+// /api/user/login
+async function userLogin(req,res,next) {
+    let schema = joi.object({
+        phone:joi.string().length(10).pattern(/^[0-9]+$/).required(),
+        password:joi.string().required(),
+        fcmToken:joi.string()
+    })
+    let result = schema.validate(req.body)
+
+    if(result.error){
+        res.status(400);
+        return next(new Error(result.error.details[0].message));
+    }
+
+    const {phone , password , fcmToken} = result.value;
+    User.findOne({phone}).then(async(user)=>{ 
+       if(user){
+        if(user.status == "Disabled"){
+            res.status(422);
+            return next(new Error("Your account is disabled"));
+        }
+        //password verification
+        const isPasswordMatched = hashPassword.verify(password,user.password)
+        if(isPasswordMatched){
+            const payload ={
+                _id : user._id,
+                status : user.status
+            }
+            const token = jwt.sign(payload,"123456")
+            res.json({message:"Login Success",token})
+            if(req.body.fcmToken)
+           {
+               Employee.findOneAndUpdate({phone}, {$push:{fcmTokens:fcmToken}}, {new: false},async (err, doc) =>{
+                if(err)
+                    console.log("error: ",err);
+            })
+        }
+        }else{
+            res.status(401);
+            return next(new Error ("Authentication Failed! Wrong Email Or Password"));
+        }
+    }else{
+        res.status(403);
+        return next(new Error ("Phone numbwe is not registered"));
+    }
+    })
+}
+
+module.exports = { getUsers,createUsers,userLogin }

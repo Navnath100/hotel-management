@@ -2,11 +2,12 @@ const express = require('express')
 const compression = require('compression')
 //creating connection to database
 require('./database/connection')()
-require('./middlewares/sms')()
+// require('./middlewares/sms')()
 const morgan = require('morgan')
 const handleErrors = require('./middlewares/error-handler')
 const ApiAuthorization = require('./middlewares/apiAuthorization')
 const { userRouter } = require('./routers/userRouter')
+const { residerRouter } = require('./routers/residerRouter')
 // const { ticketRouter } = require('./router/ticketRouter')
 // const { locationRouter } = require('./router/locationRouter')
 // const { machineRouter } = require('./router/machineRouter')
@@ -51,11 +52,11 @@ application.listen(port, () => {
 })
 
 // application.use(ApiAuthorization)
-
 const APIRouter = express.Router()
 application.use('/api', APIRouter)
 APIRouter.get('/',(req,res,next)=>{res.json("Api is working...!")})
 APIRouter.use('/user', userRouter)
+APIRouter.use('/resider', residerRouter)
 
 // APIRouter.use('/tickets', ticketRouter)
 
