@@ -3,9 +3,10 @@
 const joi=require('joi')
 const jwt=require('jsonwebtoken')
 const hashPassword = require('password-hash');
-const { Collection } = require("mongoose");
+const { Collection, isValidObjectId } = require("mongoose");
 const crypto = require('crypto');
 const { User } = require('../models/users')
+const { ObjectId } = require('mongodb')
 
 // /api/users/
 async function getUsers(req,res,next) {
@@ -22,6 +23,20 @@ async function getUsers(req,res,next) {
     }
     
 }
+
+// /api/users/
+async function getUserInfo(req,res,next) {
+    try {
+        const id = req.params.id;
+        User.findOne({_id:ObjectId(id)}).then(data=>{
+            if(data)
+                res.json(data)
+        });
+    } catch (error) {
+        return next(new Error(error))
+    }
+}
+
 // /api/user/
 async function createUsers(req,res,next) {
 
@@ -119,7 +134,7 @@ async function userLogin(req,res,next) {
             res.json({message:"Login Success",token})
             if(req.body.fcmToken)
            {
-               Employee.findOneAndUpdate({phone}, {$push:{fcmTokens:fcmToken}}, {new: false},async (err, doc) =>{
+               User.findOneAndUpdate({phone}, {$push:{fcmTokens:fcmToken}}, {new: false},async (err, doc) =>{
                 if(err)
                     console.log("error: ",err);
             })
@@ -135,4 +150,4 @@ async function userLogin(req,res,next) {
     })
 }
 
-module.exports = { getUsers,createUsers,userLogin }
+module.exports = { getUsers,createUsers,userLogin,getUserInfo }
