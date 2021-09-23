@@ -6,9 +6,6 @@ const hashPassword = require('password-hash');
 const { Collection } = require("mongoose");
 const crypto = require('crypto');
 const { User } = require('../models/users')
-// const SgMail = require("@sendgrid/mail");
-// const emailApiKey = "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";
-// SgMail.setApiKey(emailApiKey)
 
 // /api/users/
 async function getUsers(req,res,next) {

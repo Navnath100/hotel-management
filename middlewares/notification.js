@@ -2,10 +2,10 @@
 // // const serviceAccount = require("../hawkins-incident-management-firebase-adminsdk-7ym1l-e9a37aeb85.json");
 // const fetch = require('node-fetch')
 
-// const SgMail = require("@sendgrid/mail");
+const SgMail = require("@sendgrid/mail");
 // const { response } = require("express");
-// const emailApiKey = "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";
-// SgMail.setApiKey(emailApiKey)
+const emailApiKey = "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";
+SgMail.setApiKey(emailApiKey)
 
 // // async function sendNotification(title,body,token,next) {
 // //     // admin.initializeApp({
@@ -51,19 +51,19 @@
 // //       })
 // // }
 
-// async function sendEmail(subject,body,to) {
-//     const msg = {
-//         to,
-//         from:{
-//             name:'Hawkins',
-//             email:'navnath.unicoglobal@gmail.com',
-//         },
-//         subject,
-//         html:`<p> ${body} </p>`,
-//     }
-//         SgMail.send(msg)
-//             // .then((ee)=>res.send({succes : "Email verification link has been sent to your registered email"}))
-//             .catch((err)=>console.log(err))
-// }
+async function sendEmail(subject,body,to) {
+    const msg = {
+        to,
+        from:{
+            name:'Sadguru Lodge',
+            email:'sadgurulodge.server@gmail.com',
+        },
+        subject,
+        html:`${body}`,
+    }
+        SgMail.send(msg)
+            // .then((ee)=>res.send({succes : "Email verification link has been sent to your registered email"}))
+            .catch((err)=>console.log(err))
+}
 
-// module.exports = { sendNotification , sendEmail}
+module.exports = { sendEmail}

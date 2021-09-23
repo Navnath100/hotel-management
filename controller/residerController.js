@@ -1,6 +1,7 @@
 const joi=require('joi')
 const { User } = require('../models/users')
 const { Resider } = require('../models/residers')
+const { sendEmail } = require('../middlewares/notification');
 
 // /api/resider/
 async function getResiders(req,res,next) {
@@ -34,12 +35,24 @@ async function addResider(req,res,next) {
         res.status(400);
         return next(new Error(result.error.details[0].message))
     }
-    
     const residerData = result.value;
     User.findOne({_id : residerData.checkIn.by}).then(user =>{
         if(user){
             residerData.checkIn.time = new Date().toISOString();
             const resider = new Resider(residerData).save().then(resider=>{
+                const checkinTime = new Date(resider.checkIn.time).toLocaleString();
+                const sub = `${resider.name}_ has checked in`;
+                console.log(sub);
+                const body = `<h1>Custmer Details</h1>
+                            <p>Name : ${resider.name}<br>
+                            Email : ${resider.email.emailID}<br>
+                            Phone no. : ${resider.phone}<br>
+                            ID Proof : ${resider.idProof.type}<br>
+                            Address Proof : ${resider.addressProof.type}<br>
+                            Checkin Time : ${checkinTime}<br>
+                            Registered By : ${user.name}<br></p>`;
+                const to = "navnathphapale100@gmail.com";
+                sendEmail(sub,body,to);
                 res.json(resider);
             });
             
