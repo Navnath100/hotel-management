@@ -25,7 +25,8 @@ async function getResiders(req,res,next) {
 // /api/resider/
 async function addResider(req,res,next) {
 //     console.log(req.file);
-let myFile = req.file.originalname.split(".")
+try {
+    let myFile = req.file.originalname.split(".")
     const fileType = myFile[myFile.length - 1]
     const params = {
         Bucket: "sadguru-lodge",
@@ -40,6 +41,9 @@ let myFile = req.file.originalname.split(".")
 
         res.status(200).send(data)
     })
+} catch (error) {
+    return next(new Error(error))
+}
 //     let myFile = req.file.originalname.split(".");
 //     const fileType = myFile[myFile.length - 1]
 //     console.log(req.file);
