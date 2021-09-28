@@ -2,6 +2,10 @@ const joi=require('joi')
 const { User } = require('../models/users')
 const { Resider } = require('../models/residers')
 const { sendEmail } = require('../middlewares/notification');
+const AWS = require('aws-sdk')
+const uuid = require('uuid/v4')
+const { upload,s3 } = require('../middlewares/uploadImg')
+
 
 // /api/resider/
 async function getResiders(req,res,next) {
@@ -20,47 +24,69 @@ async function getResiders(req,res,next) {
 }
 // /api/resider/
 async function addResider(req,res,next) {
-
-    let schema = joi.object({
-        name:joi.string().min(1).max(60).required(),
-        phone:joi.string().length(10).pattern(/^[0-9]+$/).required(),
-        email:joi.object({emailID:joi.string().required(),status:joi.string(),resetToken:joi.string(),expireToken:joi.date()}),
-        idProof:joi.object({type:joi.string().required(),imgLink:joi.string()}),
-        addressProof:joi.object({type:joi.string().required(),imgLink:joi.string()}),
-        checkIn:joi.object({by:joi.string().required(),time:joi.date()})    
-    })
-    let result = schema.validate(req.body)
-
-    if(result.error){
-        res.status(400);
-        return next(new Error(result.error.details[0].message))
+//     console.log(req.file);
+let myFile = req.file.originalname.split(".")
+    const fileType = myFile[myFile.length - 1]
+    const params = {
+        Bucket: "sadguru-lodge",
+        Key: `${uuid()}.${fileType}`,
+        Body: req.file.buffer
     }
-    const residerData = result.value;
-    User.findOne({_id : residerData.checkIn.by}).then(user =>{
-        if(user){
-            residerData.checkIn.time = new Date().toISOString();
-            const resider = new Resider(residerData).save().then(resider=>{
-                const checkinTime = new Date(resider.checkIn.time).toLocaleString();
-                const sub = `${resider.name}_ has checked in`;
-                console.log(sub);
-                const body = `<h1>Custmer Details</h1>
-                            <p>Name : ${resider.name}<br>
-                            Email : ${resider.email.emailID}<br>
-                            Phone no. : ${resider.phone}<br>
-                            ID Proof : ${resider.idProof.type}<br>
-                            Address Proof : ${resider.addressProof.type}<br>
-                            Checkin Time : ${checkinTime}<br>
-                            Registered By : ${user.name}<br></p>`;
-                const to = "navnathphapale100@gmail.com";
-                sendEmail(sub,body,to);
-                res.json(resider);
-            });
-            
-        }else if(!user)
-            return next(new Error("Unauthorized access denied"))
-    }).catch(err=>{
-        return next(new Error(err))
+
+    s3.upload(params, (error, data) => {
+        if(error){
+            res.status(500).send(error)
+        }
+
+        res.status(200).send(data)
     })
+//     let myFile = req.file.originalname.split(".");
+//     const fileType = myFile[myFile.length - 1]
+//     console.log(req.file);
+//     const BUCKET = "";
+
+//     })
+
+    // let schema = joi.object({
+    //     name:joi.string().min(1).max(60).required(),
+    //     phone:joi.string().length(10).pattern(/^[0-9]+$/).required(),
+    //     email:joi.object({emailID:joi.string().required(),status:joi.string(),resetToken:joi.string(),expireToken:joi.date()}),
+    //     idProof:joi.object({type:joi.string().required(),imgLink:joi.string()}),
+    //     addressProof:joi.object({type:joi.string().required(),imgLink:joi.string()}),
+    //     checkIn:joi.object({by:joi.string().required(),time:joi.date()})    
+    // })
+    // let result = schema.validate(req.body)
+
+    // if(result.error){
+    //     res.status(400);
+    //     return next(new Error(result.error.details[0].message))
+    // }
+    // const residerData = result.value;
+    // User.findOne({_id : residerData.checkIn.by}).then(user =>{
+    //     if(user){
+    //         residerData.checkIn.time = new Date().toISOString();
+    //         const resider = new Resider(residerData).save().then(resider=>{
+    //             const checkinTime = new Date(resider.checkIn.time).toLocaleString();
+    //             const sub = `${resider.name}_ has checked in`;
+    //             console.log(sub);
+    //             const body = `<h1>Custmer Details</h1>
+    //                         <p>Name : ${resider.name}<br>
+    //                         Email : ${resider.email.emailID}<br>
+    //                         Phone no. : ${resider.phone}<br>
+    //                         ID Proof : ${resider.idProof.type}<br>
+    //                         Address Proof : ${resider.addressProof.type}<br>
+    //                         Checkin Time : ${checkinTime}<br>
+    //                         Registered By : ${user.name}<br></p>`;
+    //             const to = "navnathphapale100@gmail.com";
+    //             sendEmail(sub,body,to);
+    //             res.json(resider);
+    //         });
+            
+    //     }else if(!user)
+    //         return next(new Error("Unauthorized access denied"))
+    // }).catch(err=>{
+    //     return next(new Error(err))
+    // })
 
 }
 // /api/resider/check-out
