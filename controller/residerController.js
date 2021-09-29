@@ -24,7 +24,7 @@ async function getResiders(req,res,next) {
 }
 // /api/resider/
 async function addResider(req,res,next) {
-    console.log(req);
+    console.log(req.file);
 try {
     let myFile = req.file.originalname.split(".")
     const fileType = myFile[myFile.length - 1]
