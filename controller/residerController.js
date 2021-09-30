@@ -28,8 +28,8 @@ async function addResider(req,res,next) {
         name:joi.string().min(1).max(60).required(),
         phone:joi.string().length(10).pattern(/^[0-9]+$/).required(),
         email:joi.object({emailID:joi.string().required(),status:joi.string(),resetToken:joi.string(),expireToken:joi.date()}).required(),
-        idProof:joi.object({type:joi.string().required(),imgLink:joi.string()}).required(),
-        addressProof:joi.object({type:joi.string().required(),imgLink:joi.string()}).required(),
+        idProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string()})}).required(),
+        addressProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string()}).required()}).required(),
         checkIn:joi.object({by:joi.string().required(),time:joi.date()})    
     })
     let result = schema.validate(req.body)
