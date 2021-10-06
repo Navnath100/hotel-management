@@ -142,5 +142,37 @@ async function checkOut(req,res,next) {
         return next(new Error(err))
     })
 }
+// /api/resider/add-expenses
+async function addExpense(req,res,next) {
+    let schema = joi.object({
+        addedBy:joi.string().required(),
+        phone:joi.number().required(),
+        item:joi.string().required(),
+        charges:joi.number().required()
+    })
+    let result = schema.validate(req.body)
 
-module.exports = { getResiders,addResider,checkOut,uploadImg }
+    if(result.error){
+        res.status(400);
+        return next(new Error(result.error.details[0].message))
+    }
+
+    const {item,charges,addedBy,phone} = result.value;
+    User.findOne({_id : addedBy}).then(user =>{
+        if(user && user.status == "Active"){
+            Resider.findOneAndUpdate({phone,status:"checked-in"}, {$push:{expenses:{item,charges,addedBy}}}, {new: false}, (err, doc)=>{
+                if(doc){
+                    res.json(doc);
+                } else if(err){
+                    return next(new Error(err));
+                }
+            });
+        } 
+        else
+            return next(new Error("Unauthorized access denied"))
+    }).catch(err=>{
+        return next(new Error(err))
+    })
+}
+
+module.exports = { getResiders,addResider,checkOut,uploadImg,addExpense }

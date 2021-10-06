@@ -11,7 +11,7 @@ const residerSchema = new Schema({
     checkIn : {by: {type :String,required:true}, time:{type : Date,required:true}},
     checkOut : {by: {type :String,required:false}, time:{type : Date,required:false}},
     status : {type : String , required:true , default:'checked-in'},
-    // bookedBy : {type : String , required:true}
+    expenses : [{item : {type:String} , charges : {type:Number},addedBy:{type:String}}],
 },
 {
     timestamps: true
