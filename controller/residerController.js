@@ -144,35 +144,48 @@ async function checkOut(req,res,next) {
 }
 // /api/resider/add-expenses
 async function addExpense(req,res,next) {
-    let schema = joi.object({
-        addedBy:joi.string().required(),
-        phone:joi.number().required(),
-        item:joi.string().required(),
-        charges:joi.number().required()
-    })
-    let result = schema.validate(req.body)
-
-    if(result.error){
-        res.status(400);
-        return next(new Error(result.error.details[0].message))
+    try {
+        let schema = joi.object({
+            addedBy:joi.string().required(),
+            phone:joi.number().required(),
+            item:joi.string().required(),
+            charges:joi.number().required()
+        })
+        let result = schema.validate(req.body)
+    
+        if(result.error){
+            res.status(400);
+            return next(new Error(result.error.details[0].message))
+        }
+    
+        const {item,charges,addedBy,phone} = result.value;
+        User.findOne({_id : addedBy}).then(user =>{
+            if(user && user.status == "Active"){
+                Resider.findOne({$and: [{ phone },{status:"checked-in"} ] }).then(resider =>{
+                    if(resider && resider.status == "checked-in"){
+                        Resider.findOneAndUpdate({$and: [{ phone },{status:"checked-in"} ] }, {$push:{expenses:{item,charges,addedBy}}}, {new: false}, (err, doc)=>{
+                            if(doc){
+                                res.json(doc);
+                            } else if(err){
+                                res.json(err);
+                                console.log(err);
+                                // return next(new Error(err));
+                            }
+                        });
+                    }else
+                        return next(new Error("Invalid phone no."));
+                });
+            } 
+            else
+                return next(new Error("Unauthorized access denied"))
+        }).catch(err=>{
+            return next(new Error(err))
+        })
+    
+    } catch (error) {
+        console.log(error);
+        return next(new Error(error))
     }
-
-    const {item,charges,addedBy,phone} = result.value;
-    User.findOne({_id : addedBy}).then(user =>{
-        if(user && user.status == "Active"){
-            Resider.findOneAndUpdate({phone,status:"checked-in"}, {$push:{expenses:{item,charges,addedBy}}}, {new: false}, (err, doc)=>{
-                if(doc){
-                    res.json(doc);
-                } else if(err){
-                    return next(new Error(err));
-                }
-            });
-        } 
-        else
-            return next(new Error("Unauthorized access denied"))
-    }).catch(err=>{
-        return next(new Error(err))
-    })
 }
-
+    
 module.exports = { getResiders,addResider,checkOut,uploadImg,addExpense }
