@@ -173,7 +173,7 @@ async function addExpense(req,res,next) {
                             }
                         });
                     }else
-                        return next(new Error("Invalid phone no."));
+                        return next(new Error("Cusromer Not checked in using "+phone));
                 });
             } 
             else
