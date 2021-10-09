@@ -10,6 +10,7 @@ const residerSchema = new Schema({
     addressProof : {type: {type :String,required:true}, img:{Bucket:{type:String , required:true},Key:{type:String , required:true}}},
     checkIn : {by: {type :String,required:true}, time:{type : Date,required:true}},
     checkOut : {by: {type :String,required:false}, time:{type : Date,required:false}},
+    bill : {type :Object,required:false},
     status : {type : String , required:true , default:'checked-in'},
     expenses : [{item : {type:String} , charges : {type:Number},addedBy:{type:String}}],
 },

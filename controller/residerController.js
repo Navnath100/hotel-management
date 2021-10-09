@@ -105,17 +105,18 @@ async function checkOut(req,res,next) {
     const {checkOutBy,phone} = result.value;
     User.findOne({_id : checkOutBy}).then(user =>{
         if(user && user.status == "Active"){
-            Resider.findOneAndUpdate({phone}, {$set:{status:"checked-out",checkOut:{by:checkOutBy,time:new Date().toISOString()}}}, {new: false}, (err, doc)=>{
-                if(doc){
+            // Resider.findOne({$and: [{ phone },{status:"checked-in"} ] }).then( (resider)=>{
+            Resider.findOne({$and: [{ phone } ] }).then( (resider)=>{
+                if(resider){
                     const perDaycost = 500;
                     let amount = 0;
-                    let daysStayed = new Date().getDate()-new Date(doc.checkIn.time).getDate()
+                    let daysStayed = new Date().getDate()-new Date(resider.checkIn.time).getDate()
                     let stayed;
-                    if(new Date().getDate()-new Date(doc.checkIn.time).getDate() == 0){
+                    if(new Date().getDate()-new Date(resider.checkIn.time).getDate() == 0){
                         amount +=perDaycost;
-                        stayed = new Date().getHours()-new Date(doc.checkIn.time).getHours() + " Hours"
+                        stayed = new Date().getHours()-new Date(resider.checkIn.time).getHours() + " Hours"
                     }
-                    else if(new Date().getDate()-new Date(doc.checkIn.time).getDate() == 1 && new Date().getHours()<11){
+                    else if(new Date().getDate()-new Date(resider.checkIn.time).getDate() == 1 && new Date().getHours()<11){
                         amount +=perDaycost;
                         stayed = "1 Day"
                     }else{
@@ -128,10 +129,19 @@ async function checkOut(req,res,next) {
                         Bill.Net_Payment_amount = amount;
                         Bill.Stayed = stayed;
 
-                        res.json(Bill);
-                } else if(err){
-                    return next(new Error("Something Went Wrong While Updating"));
-                }else if(doc == null){
+                        Resider.findOneAndUpdate({ phone  }, {$set:{status:"checked-out",checkOut:{by:checkOutBy,time:new Date().toISOString()}},bill:Bill}, {new: true}, (err, doc)=>{
+                            if(doc){
+                                res.json(doc);
+                            } else if(err){
+                                res.json(err);
+                                console.log(err);
+                                // return next(new Error(err));
+                            }
+                        });
+
+                        // res.json(Bill);
+                
+                }else if(resider == null){
                     return next(new Error("Enter valid phone no."));
                 }
             });
@@ -198,7 +208,8 @@ async function todayBusiness(req,res,next) {
                     if(today_business.length >0){
                         let totalAmount = 0;
                         for (let i = 0; i < today_business.length; i++) {
-                                 totalAmount += today_business[i].charges                       
+                            if(today_business[i].bill != null)
+                                 totalAmount += today_business[i].bill.Net_Payment_amount                       
                         }
                         res.json({totalAmount,todayCustomers:today_business.length,today_business});
                     }else
