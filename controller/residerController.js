@@ -1,6 +1,7 @@
 const joi=require('joi')
 const { User } = require('../models/users')
 const { Resider } = require('../models/residers')
+const { StaffExpenses } = require('../models/staffExpenses')
 const { sendEmail } = require('../middlewares/notification');
 const AWS = require('aws-sdk')
 const uuid = require('uuid/v4')
@@ -204,17 +205,34 @@ async function todayBusiness(req,res,next) {
             if(user && user.status == "Active"){
                 const now = new Date();
                 const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const client = {}
                 Resider.find({createdAt: {$gte: today}}).then(today_business=>{
-                    if(today_business.length >0){
+                    if(today_business.length > 0){
                         let totalAmount = 0;
                         for (let i = 0; i < today_business.length; i++) {
                             if(today_business[i].bill != null)
                                  totalAmount += today_business[i].bill.Net_Payment_amount                       
                         }
-                        res.json({totalAmount,todayCustomers:today_business.length,today_business});
+                        client.totalAmount = totalAmount;
+                        client.todayCustomersCount = today_business.length;
+                        client.todayCustomers = today_business;
+                        
+                        // res.json(client);
                     }else
                         res.json({error:"Entries not found for today."})
+
+                StaffExpenses.find({createdAt: {$gte: today}}).then(today_expenses=>{
+                    if(today_expenses.length > 0){
+                        let todayExpenses = 0;
+                        for (let i = 0; i < today_expenses.length; i++)
+                            todayExpenses += today_expenses[i].charges                      
+                        client.todayExpenses = todayExpenses;
+                    }
+                    res.json(client);
                 });
+                        
+                });
+
             }
             else
                 return next(new Error("Unauthorized access denied"))
