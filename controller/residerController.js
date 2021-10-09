@@ -187,5 +187,34 @@ async function addExpense(req,res,next) {
         return next(new Error(error))
     }
 }
+//api/resider//today-business/:id
+async function todayBusiness(req,res,next) {
+    try {
+            User.findOne({_id : req.params.id}).then(user =>{
+            if(user && user.status == "Active"){
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                Resider.find({createdAt: {$gte: today}}).then(today_business=>{
+                    if(today_business.length >0){
+                        let totalAmount = 0;
+                        for (let i = 0; i < today_business.length; i++) {
+                                 totalAmount += today_business[i].charges                       
+                        }
+                        res.json({totalAmount,todayCustomers:today_business.length,today_business});
+                    }else
+                        res.json({error:"Entries not found for today."})
+                });
+            }
+            else
+                return next(new Error("Unauthorized access denied"))
+        }).catch(err=>{
+            return next(new Error(err))
+        })
     
-module.exports = { getResiders,addResider,checkOut,uploadImg,addExpense }
+    } catch (error) {
+        console.log(error);
+        return next(new Error(error))
+    }
+}
+    
+module.exports = { getResiders,addResider,checkOut,uploadImg,addExpense,todayBusiness }
