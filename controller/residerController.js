@@ -2,6 +2,7 @@ const joi=require('joi')
 const { User } = require('../models/users')
 const { Resider } = require('../models/residers')
 const { StaffExpenses } = require('../models/staffExpenses')
+const SendSMS = require('../middlewares/sms')
 const { sendEmail } = require('../middlewares/notification');
 const AWS = require('aws-sdk')
 const uuid = require('uuid/v4')
@@ -111,24 +112,50 @@ async function checkOut(req,res,next) {
                 if(resider){
                     const perDaycost = 500;
                     let amount = 0;
-                    let daysStayed = new Date().getDate()-new Date(resider.checkIn.time).getDate()
                     let stayed;
-                    if(new Date().getDate()-new Date(resider.checkIn.time).getDate() == 0){
-                        amount +=perDaycost;
-                        stayed = new Date().getHours()-new Date(resider.checkIn.time).getHours() + " Hours"
-                    }
-                    else if(new Date().getDate()-new Date(resider.checkIn.time).getDate() == 1 && new Date().getHours()<11){
-                        amount +=perDaycost;
-                        stayed = "1 Day"
-                    }else{
-                        if(new Date().getHours()>11)
-                            daysStayed=daysStayed+1
+                    // if(new Date().getDate()-new Date(resider.checkIn.time).getDate() == 0){
+                    //     amount +=perDaycost;
+                    //     stayed = new Date().getHours()-new Date(resider.checkIn.time).getHours() + " Hours"
+                    // }
+                    // else if(new Date().getDate()-new Date(resider.checkIn.time).getDate() == 1 && new Date().getHours()<11){
+                    //     amount +=perDaycost;
+                    //     stayed = "1 Day"
+                    // }else{
+                    //     if(new Date().getHours()>11)
+                    //         daysStayed=daysStayed+1
+                    //         amount = perDaycost * daysStayed
+                    //         stayed = daysStayed;
+                    // }
 
-                            amount = perDaycost * daysStayed
+                    
+                    if (new Date(resider.checkIn.time).getDate() == new Date().getDate()) {
+                        let stay_hours = new Date().getTime() - new Date(resider.checkIn.time).getTime();
+                        stayed = stay_hours/(1000*60*60);
+                    }else {
+                        const check_in_time = new Date(resider.checkIn.time).getTime();
+                        const first_day_stay = new Date(resider.checkIn.time).setHours(23, 59, 59) - new Date(resider.checkIn.time).getTime();
+                        const last_day_stay =  new Date().getTime() - new Date().setHours(00, 00, 00);
+                        const check_out_time = new Date().getTime();
+                        const steying_time = check_out_time - check_in_time;
+                        const mid_time = steying_time-(first_day_stay+last_day_stay);
+                        let daysStayed = Math.round(mid_time/(1000*60*60*24)) + 1;  // +1 for first day
+                        if (Math.round(last_day_stay/(1000*60*60)) > 11) {
+                            stayed = `${daysStayed} and ${last_day_stay/(1000*60*60)} hours`;
+                            daysStayed +=1;
+                        }
+                        console.log(daysStayed);
+
                     }
                         const Bill = {};
                         Bill.Net_Payment_amount = amount;
                         Bill.Stayed = stayed;
+                        let totalExpenses = 0;
+                        for (let i = 0; i < resider.expenses.length; i++) {
+                            totalExpenses +=resider.expenses[i].charges;
+                        }
+
+                        Bill.Total_Expenses = totalExpenses;
+                        
 
                         Resider.findOneAndUpdate({ phone  }, {$set:{status:"checked-out",checkOut:{by:checkOutBy,time:new Date().toISOString()}},bill:Bill}, {new: true}, (err, doc)=>{
                             if(doc){
@@ -206,6 +233,7 @@ async function todayBusiness(req,res,next) {
                 const now = new Date();
                 const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                 const client = {}
+
                 Resider.find({createdAt: {$gte: today}}).then(today_business=>{
                     if(today_business.length > 0){
                         let totalAmount = 0;
@@ -213,26 +241,26 @@ async function todayBusiness(req,res,next) {
                             if(today_business[i].bill != null)
                                  totalAmount += today_business[i].bill.Net_Payment_amount                       
                         }
-                        client.totalAmount = totalAmount;
-                        client.todayCustomersCount = today_business.length;
-                        client.todayCustomers = today_business;
+                        client["todayBusiness"] = totalAmount;
+                        client["todayCustomersCount"] = today_business.length;
+                        client["todayCustomers"] = today_business;
                         
                         // res.json(client);
                     }else
                         res.json({error:"Entries not found for today."})
-
-                StaffExpenses.find({createdAt: {$gte: today}}).then(today_expenses=>{
-                    if(today_expenses.length > 0){
-                        let todayExpenses = 0;
-                        for (let i = 0; i < today_expenses.length; i++)
-                            todayExpenses += today_expenses[i].charges                      
-                        client.todayExpenses = todayExpenses;
-                    }
-                    res.json(client);
-                });
                         
                 });
 
+                StaffExpenses.find({createdAt: {$gte: today}}).then(today_expenses=>{
+                    if(today_expenses.length >= 0){
+                        console.log("inside if");
+                        let todayExpenses = 0;
+                        for (let i = 0; i < today_expenses.length; i++)
+                            todayExpenses += today_expenses[i].charges                      
+                        client.todayStaffExpenses = todayExpenses;
+                    }
+                    res.json(client);
+                });
             }
             else
                 return next(new Error("Unauthorized access denied"))

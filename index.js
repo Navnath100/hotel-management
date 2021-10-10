@@ -2,7 +2,6 @@ const express = require('express')
 const compression = require('compression')
 //creating connection to database
 require('./database/connection')()
-// require('./middlewares/sms')()
 const morgan = require('morgan')
 const handleErrors = require('./middlewares/error-handler')
 const ApiAuthorization = require('./middlewares/apiAuthorization')
