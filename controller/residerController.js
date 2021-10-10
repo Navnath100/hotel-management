@@ -7,6 +7,7 @@ const { sendEmail } = require('../middlewares/notification');
 const AWS = require('aws-sdk')
 const uuid = require('uuid/v4')
 const { upload,s3 } = require('../middlewares/uploadImg')
+const sendSMS = require('../middlewares/sms')
 
 
 // /api/resider/
@@ -107,8 +108,7 @@ async function checkOut(req,res,next) {
     const {checkOutBy,phone} = result.value;
     User.findOne({_id : checkOutBy}).then(user =>{
         if(user && user.status == "Active"){
-            // Resider.findOne({$and: [{ phone },{status:"checked-in"} ] }).then( (resider)=>{
-            Resider.findOne({$and: [{ phone } ] }).then( (resider)=>{
+            Resider.findOne({$and: [{ phone },{status:"checked-in"} ] }).then( (resider)=>{
                 if(resider){
                     const perDaycost = 500;
                     let amount = 0;
@@ -147,19 +147,21 @@ async function checkOut(req,res,next) {
                         amount = daysStayed * perDaycost;
                     }
                         const Bill = {};
-                        Bill.Net_Payment_amount = amount;
                         Bill.Stayed = stayed;
+                        Bill.StayCharges = amount;
                         let totalExpenses = 0;
                         for (let i = 0; i < resider.expenses.length; i++) {
                             totalExpenses +=resider.expenses[i].charges;
                         }
-
+                        
+                        Bill.Net_Payment_amount = amount+totalExpenses;
                         Bill.Total_Expenses = totalExpenses;
                         
 
                         Resider.findOneAndUpdate({ phone  }, {$set:{status:"checked-out",checkOut:{by:checkOutBy,time:new Date().toISOString()}},bill:Bill}, {new: true}, (err, doc)=>{
                             if(doc){
                                 res.json(doc);
+                                sendSMS(resider.name,amount+totalExpenses,resider.phone);
                             } else if(err){
                                 res.json(err);
                                 console.log(err);
