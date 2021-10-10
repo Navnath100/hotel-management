@@ -131,6 +131,7 @@ async function checkOut(req,res,next) {
                     if (new Date(resider.checkIn.time).getDate() == new Date().getDate()) {
                         let stay_hours = new Date().getTime() - new Date(resider.checkIn.time).getTime();
                         stayed = stay_hours/(1000*60*60);
+                        amount = perDaycost
                     }else {
                         const check_in_time = new Date(resider.checkIn.time).getTime();
                         const first_day_stay = new Date(resider.checkIn.time).setHours(23, 59, 59) - new Date(resider.checkIn.time).getTime();
@@ -143,8 +144,7 @@ async function checkOut(req,res,next) {
                             stayed = `${daysStayed} and ${last_day_stay/(1000*60*60)} hours`;
                             daysStayed +=1;
                         }
-                        console.log(daysStayed);
-
+                        amount = daysStayed * perDaycost;
                     }
                         const Bill = {};
                         Bill.Net_Payment_amount = amount;
@@ -246,20 +246,19 @@ async function todayBusiness(req,res,next) {
                         client["todayCustomers"] = today_business;
                         
                         // res.json(client);
+                        StaffExpenses.find({createdAt: {$gte: today}}).then(today_expenses=>{
+                            if(today_expenses.length >= 0){
+                                let todayExpenses = 0;
+                                for (let i = 0; i < today_expenses.length; i++)
+                                    todayExpenses += today_expenses[i].charges                      
+                                client.todayStaffExpenses = todayExpenses;
+                            }
+                            res.json(client);
+                        });
+
                     }else
                         res.json({error:"Entries not found for today."})
                         
-                });
-
-                StaffExpenses.find({createdAt: {$gte: today}}).then(today_expenses=>{
-                    if(today_expenses.length >= 0){
-                        console.log("inside if");
-                        let todayExpenses = 0;
-                        for (let i = 0; i < today_expenses.length; i++)
-                            todayExpenses += today_expenses[i].charges                      
-                        client.todayStaffExpenses = todayExpenses;
-                    }
-                    res.json(client);
                 });
             }
             else
