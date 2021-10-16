@@ -49,6 +49,7 @@ async function addResider(req,res,next) {
                 // const checkinTime = resider.checkIn.time.toLocaleString();
                 // console.log(checkinTime);
                 // console.log(resider.checkIn.time.toLocaleString());
+                const a = new Date().toLocaleString();
                 const sub = `${resider.name}_ has checked in`;
                 // console.log(sub);
                 const body = `<h1>Custmer Details</h1>
@@ -57,7 +58,7 @@ async function addResider(req,res,next) {
                             Phone no. : ${resider.phone}<br>
                             ID Proof : ${resider.idProof.type}<br>
                             Address Proof : ${resider.addressProof.type}<br>
-                            Checkin Time : ${JSON.stringify(new Date().toLocaleString())}<br>
+                            Checkin Time : ${a}<br>
                             Registered By : ${user.name}<br></p>`;
                 const to = "navnathphapale100@gmail.com";
                 sendEmail(sub,body,to);
