@@ -44,21 +44,20 @@ async function addResider(req,res,next) {
     const residerData = result.value;
     User.findOne({_id : residerData.checkIn.by}).then(user =>{
         if(user){
-            residerData.checkIn.time = new Date();
+            residerData.checkIn.time = new Date().getTimezoneOffset(330);
             const resider = new Resider(residerData).save().then(resider=>{
-                // const checkinTime = resider.checkIn.time.toLocaleString();
+                const checkinTime = resider.createdAt.toLocaleString();
                 // console.log(checkinTime);
                 // console.log(resider.checkIn.time.toLocaleString());
-                const a = new Date().toLocaleString();
                 const sub = `${resider.name}_ has checked in`;
-                // console.log(sub);
                 const body = `<h1>Custmer Details</h1>
                             <p>Name : ${resider.name}<br>
                             Email : ${resider.email.emailID}<br>
                             Phone no. : ${resider.phone}<br>
                             ID Proof : ${resider.idProof.type}<br>
                             Address Proof : ${resider.addressProof.type}<br>
-                            Checkin Time : ${a}<br>
+                            Checkin Time : ${resider.checkIn.time.toLocaleString()}<br>
+                            CreatedAT : ${checkinTime}<br>
                             Registered By : ${user.name}<br></p>`;
                 const to = "navnathphapale100@gmail.com";
                 sendEmail(sub,body,to);
