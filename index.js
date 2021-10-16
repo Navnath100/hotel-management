@@ -50,7 +50,6 @@ const port = process.env.PORT || 5000
 application.listen(port, () => {
     console.log(`Listening on http://localhost:${port}`)
 })
-
 // application.use(ApiAuthorization)
 const APIRouter = express.Router()
 application.use('/api', APIRouter)

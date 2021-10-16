@@ -8,7 +8,7 @@ const residerSchema = new Schema({
     email : {status: {type :String, default:'Pending'}, emailID:{type : String,required:true},resetToken : {type : String,required:false},expireToken : {type : Date,required:false}},
     idProof : {type: {type :String,required:true}, img:{Bucket:{type:String , required:true},Key:{type:String , required:true}}},
     addressProof : {type: {type :String,required:true}, img:{Bucket:{type:String , required:true},Key:{type:String , required:true}}},
-    checkIn : {by: {type :String,required:true}, time:{type : Date,required:true}},
+    checkIn : {by: {type :String,required:true}, time:{type : String    ,required:true}},
     checkOut : {by: {type :String,required:false}, time:{type : Date,required:false}},
     bill : {type :Object,required:false},
     status : {type : String , required:true , default:'checked-in'},

@@ -60,6 +60,7 @@ async function addResider(req,res,next) {
                             Checkin Time : ${JSON.stringify(new Date().toLocaleString())}<br>
                             Registered By : ${user.name}<br></p>`;
                 const to = "navnathphapale100@gmail.com";
+                JSON.stringify(new Date().toLocaleString()
                 sendEmail(sub,body,to);
                 res.json(resider);
             });
