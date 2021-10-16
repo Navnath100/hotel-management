@@ -44,7 +44,7 @@ async function addResider(req,res,next) {
     const residerData = result.value;
     User.findOne({_id : residerData.checkIn.by}).then(user =>{
         if(user){
-            residerData.checkIn.time = new Date().getTimezoneOffset(330);
+            residerData.checkIn.time = new Date().getTimezoneOffset(-330);
             const resider = new Resider(residerData).save().then(resider=>{
                 const checkinTime = resider.createdAt.toLocaleString();
                 // console.log(checkinTime);
