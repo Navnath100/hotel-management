@@ -66,4 +66,20 @@ async function sendEmail(subject,body,to) {
             .catch((err)=>console.log(err))
 }
 
-module.exports = { sendEmail}
+async function sendCheckOutEmail(subject,body,to) {
+    const msg = {
+        to,
+        from:{
+            name:'Sadguru Lodge',
+            email:'sadgurulodge.server@gmail.com',
+        },
+        subject,
+        html:`${body}`,
+    }
+    console.log(msg);
+        SgMail.send(msg)
+            // .then((ee)=>res.send({succes : "Email verification link has been sent to your registered email"}))
+            .catch((err)=>console.log(err))
+}
+
+module.exports = { sendEmail,sendCheckOutEmail}

@@ -3,7 +3,7 @@ const { User } = require('../models/users')
 const { Resider } = require('../models/residers')
 const { StaffExpenses } = require('../models/staffExpenses')
 const SendSMS = require('../middlewares/sms')
-const { sendEmail } = require('../middlewares/notification');
+const { sendEmail,sendCheckOutEmail } = require('../middlewares/notification');
 const AWS = require('aws-sdk')
 const uuid = require('uuid/v4')
 const { upload,s3 } = require('../middlewares/uploadImg')
@@ -47,8 +47,10 @@ async function addResider(req,res,next) {
             residerData.checkIn.time = new Date().toISOString();
             const resider = new Resider(residerData).save().then(resider=>{
                 const checkinTime = new Date(resider.checkIn.time).toLocaleString();
+                // console.log(checkinTime);
+                // console.log(resider.checkIn.time.toLocaleString());
                 const sub = `${resider.name}_ has checked in`;
-                console.log(sub);
+                // console.log(sub);
                 const body = `<h1>Custmer Details</h1>
                             <p>Name : ${resider.name}<br>
                             Email : ${resider.email.emailID}<br>
@@ -153,18 +155,26 @@ async function checkOut(req,res,next) {
                         for (let i = 0; i < resider.expenses.length; i++) {
                             totalExpenses +=resider.expenses[i].charges;
                         }
-                        
-                        Bill.Net_Payment_amount = amount+totalExpenses;
+                        const total = amount+totalExpenses
+                        Bill.Net_Payment_amount = total;
                         Bill.Total_Expenses = totalExpenses;
                         
 
                         Resider.findOneAndUpdate({ phone  }, {$set:{status:"checked-out",checkOut:{by:checkOutBy,time:new Date().toISOString()}},bill:Bill}, {new: true}, (err, doc)=>{
                             if(doc){
                                 res.json(doc);
-                                sendSMS(resider.name,amount+totalExpenses,resider.phone);
+                                const sub = `${resider.name}_ has checked out`;
+                                // console.log(sub);
+                                const body = `<h1>Checked Out Successfully</h1>
+                                            <p>Dear ${resider.name}, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
+                                            Your checkout is confirmed and your total payment amount is Rs.${amount+totalExpenses}. 
+                                            Please don’t hesitate to contact us on {9999999999} for any concern.`;
+                                const to = ["navnathphapale100@gmail.com",resider.email.emailID];
+                                sendCheckOutEmail(sub,body,to);
+                                // sendSMS(resider.name,amount+totalExpenses,resider.phone);
                             } else if(err){
                                 res.json(err);
-                                console.log(err);
+                                // console.log(err);
                                 // return next(new Error(err));
                             }
                         });
@@ -253,7 +263,7 @@ async function todayBusiness(req,res,next) {
                                 let todayExpenses = 0;
                                 for (let i = 0; i < today_expenses.length; i++)
                                     todayExpenses += today_expenses[i].charges                      
-                                client.todayStaffExpenses = todayExpenses;
+                                client["todayStaffExpenses"] = todayExpenses;
                             }
                             res.json(client);
                         });
