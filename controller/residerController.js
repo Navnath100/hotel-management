@@ -57,7 +57,7 @@ async function addResider(req,res,next) {
                             Phone no. : ${resider.phone}<br>
                             ID Proof : ${resider.idProof.type}<br>
                             Address Proof : ${resider.addressProof.type}<br>
-                            Checkin Time : ${new Date().toLocaleString()}<br>
+                            Checkin Time : ${json.toString(new Date().toLocaleString())}<br>
                             Registered By : ${user.name}<br></p>`;
                 const to = "navnathphapale100@gmail.com";
                 sendEmail(sub,body,to);
