@@ -44,9 +44,9 @@ async function addResider(req,res,next) {
     const residerData = result.value;
     User.findOne({_id : residerData.checkIn.by}).then(user =>{
         if(user){
-            residerData.checkIn.time = new Date().toISOString();
+            // residerData.checkIn.time = new Date().toISOString();
             const resider = new Resider(residerData).save().then(resider=>{
-                const checkinTime = new Date(resider.checkIn.time).toLocaleString();
+                const checkinTime = resider.checkIn.time.toLocaleString();
                 // console.log(checkinTime);
                 // console.log(resider.checkIn.time.toLocaleString());
                 const sub = `${resider.name}_ has checked in`;
