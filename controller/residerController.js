@@ -47,7 +47,6 @@ async function addResider(req,res,next) {
             residerData.checkIn.time = new Date();
             const resider = new Resider(residerData).save().then(resider=>{
                 const checkinTime = (new Date(resider.checkIn.time).getTime())+(330*60*1000);
-                console.log(new Date(checkinTime).toLocaleString());
                 const sub = `${resider.name}_ has checked in`;
                 const body = `<h1>Custmer Details</h1>
                             <p>Name : ${resider.name}<br>
@@ -56,7 +55,6 @@ async function addResider(req,res,next) {
                             ID Proof : ${resider.idProof.type}<br>
                             Address Proof : ${resider.addressProof.type}<br>
                             Checkin Time : ${new Date(checkinTime).toLocaleString()}<br>
-                            reacl : ${new Date(resider.checkIn.time).toLocaleString()}<br>
                             Registered By : ${user.name}<br></p>`;
                 const to = "navnathphapale100@gmail.com";
                 sendEmail(sub,body,to);
@@ -72,7 +70,6 @@ async function addResider(req,res,next) {
 }
 // /api/resider/uploadImg
 async function uploadImg(req,res,next) {
-    console.log(req.file);
 try {
     let myFile = req.file.originalname.split(".")
     const fileType = myFile[myFile.length - 1]
@@ -163,7 +160,6 @@ async function checkOut(req,res,next) {
                             if(doc){
                                 res.json(doc);
                                 const sub = `${resider.name}_ has checked out`;
-                                // console.log(sub);
                                 const body = `<h1>Checked Out Successfully</h1>
                                             <p>Dear ${resider.name}, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
                                             Your checkout is confirmed and your total payment amount is Rs.${amount+totalExpenses}. 
@@ -173,7 +169,6 @@ async function checkOut(req,res,next) {
                                 // sendSMS(resider.name,amount+totalExpenses,resider.phone);
                             } else if(err){
                                 res.json(err);
-                                // console.log(err);
                                 // return next(new Error(err));
                             }
                         });
