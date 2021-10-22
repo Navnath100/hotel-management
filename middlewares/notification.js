@@ -61,6 +61,7 @@ async function sendEmail(subject,body,to) {
         subject,
         html:`${body}`,
     }
+    // console.log(msg);
         SgMail.send(msg)
             // .then((ee)=>res.send({succes : "Email verification link has been sent to your registered email"}))
             .catch((err)=>console.log(err))

@@ -8,10 +8,13 @@ const AWS = require('aws-sdk')
 const uuid = require('uuid/v4')
 const { upload,s3 } = require('../middlewares/uploadImg')
 const sendSMS = require('../middlewares/sms')
-
-
+let residerCount = null;
+if (residerCount == null) {
+        Resider.find().countDocuments().then(val =>residerCount=val+1);
+}
 // /api/resider/
 async function getResiders(req,res,next) {
+    console.log(i);
     try {
         Resider.find().sort({ createdAt: -1 }).then(async(data)=>{
             const count = await Resider.find().countDocuments();
@@ -28,36 +31,56 @@ async function getResiders(req,res,next) {
 // /api/resider/addResider
 async function addResider(req,res,next) {
     let schema = joi.object({
-        name:joi.string().min(1).max(60).required(),
-        phone:joi.string().length(10).pattern(/^[0-9]+$/).required(),
-        email:joi.object({emailID:joi.string().required(),status:joi.string(),resetToken:joi.string(),expireToken:joi.date()}).required(),
-        idProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required(),
-        addressProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required(),
-        checkIn:joi.object({by:joi.string().required(),time:joi.date()}).required()  
+        roomNo:joi.string().pattern(/^[0-9]+$/).required(),
+        isAC:joi.boolean().required(),
+        amountPerDay:joi.string().pattern(/^[0-9]+$/).required(),
+        phone:joi.object({
+            number:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required(),
+            isVerified:joi.boolean().required(),
+            otp:joi.string().pattern(/^[0-9]+$/),
+            expiry:joi.date()
+        }).required(),
+        residers:joi.array().items(joi.object({
+            name:joi.string().min(1).max(60).required(),
+            email:joi.object({emailID:joi.string().required(),status:joi.string(),resetToken:joi.string(),expireToken:joi.date()}).required(),
+            idProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required(),
+            addressProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required()
+        }).required()).min(1).required(),
+        // name:joi.string().min(1).max(60).required(),
+        // email:joi.object({emailID:joi.string().required(),status:joi.string(),resetToken:joi.string(),expireToken:joi.date()}).required(),
+        // idProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required(),
+        // addressProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required(),
+        checkIn:joi.object({by:joi.string().required(),time:joi.date()}).required() 
     })
     let result = schema.validate(req.body)
-
     if(result.error){
         res.status(400);
         return next(new Error(result.error.details[0].message))
     }
     const residerData = result.value;
+    // if (residerData.phone.isVerified == false) {
+    //     return next(new Error("Please verify your phone no. via OTP"))
+    // }
+    residerData["SrNo"] = residerCount,
     User.findOne({_id : residerData.checkIn.by}).then(user =>{
         if(user){
-            residerData.checkIn.time = new Date();
             const resider = new Resider(residerData).save().then(resider=>{
-                const checkinTime = (new Date(resider.checkIn.time).getTime())+(330*60*1000);
-                const sub = `${resider.name}_ has checked in`;
-                const body = `<h1>Custmer Details</h1>
-                            <p>Name : ${resider.name}<br>
-                            Email : ${resider.email.emailID}<br>
-                            Phone no. : ${resider.phone}<br>
-                            ID Proof : ${resider.idProof.type}<br>
-                            Address Proof : ${resider.addressProof.type}<br>
-                            Checkin Time : ${new Date(checkinTime).toLocaleString()}<br>
-                            Registered By : ${user.name}<br></p>`;
-                const to = "navnathphapale100@gmail.com";
-                sendEmail(sub,body,to);
+                // const checkinTime = (new Date(resider.checkIn.time).getTime())+(330*60*1000);
+                // const sub = `${resider.name}_ has checked in`;
+                // const body = `<h1>Custmer Details</h1>
+                //             <p>Name : ${resider.name}<br>
+                //             Email : ${resider.email.emailID}<br>
+                //             Phone no. : ${resider.phone}<br>
+                //             ID Proof : ${resider.idProof.type}<br>
+                //             Address Proof : ${resider.addressProof.type}<br>
+                //             Checkin Time : ${new Date(checkinTime).toLocaleString()}<br>
+                //             Registered By : ${user.name}<br></p>`;
+                // const to = "navnathphapale100@gmail.com";
+                // sendEmail(sub,body,to);
+                residerCount++;
+                const data = {_id:JSON.stringify(resider._id),phone:resider.phone.number,email:resider.residers[0].email.emailID}
+                req.body = data;
+                sendOtp(req,res,next)
                 res.json(resider);
             });
             
@@ -278,5 +301,106 @@ async function todayBusiness(req,res,next) {
         return next(new Error(error))
     }
 }
+//api/resider/send-otp
+async function sendOtp(req,res,next) {
+    try {
+        let schema = joi.object({
+            _id:joi.string().required(),
+            phone:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required(),
+            email:joi.string().required(),
+        })
+        let result = schema.validate(req.body)
     
-module.exports = { getResiders,addResider,checkOut,uploadImg,addExpense,todayBusiness }
+        if(result.error){
+            res.status(400);
+            return next(new Error(result.error.details[0].message))
+        }
+    
+        const {item,charges,addedBy,phone} = result.value;
+        Resider.findOneAndUpdate({ _id:JSON.parse(req.body._id),"phone.number":req.body.phone  }, {$set:{"phone.otp":123456,"phone.expiry":new Date().getTime()+(1000*60*10)}}, {new: false}, (err, doc)=>{
+            if(doc){
+                
+                const sub = `OTP Verification`;
+                const body = `<h3>Your OTP is 123456.It will expire in 10 minutes</h3>`;
+                const to = [req.body.email];
+                sendEmail(sub,body,to);
+                // sendSMS(resider.name,amount+totalExpenses,resider.phone);
+            } else if(err){
+                console.log("Error while sending otp : "+err);
+            }
+        });
+    } catch (error) {
+        return next(new Error(error))
+    }
+}
+//api/resider/verify-otp
+async function verifyOtp(req,res,next) {
+    try {
+        let schema = joi.object({
+            reqBy:joi.string().required(),
+            _id:joi.string().required(),
+            otp:joi.number().required(),
+        })
+        let result = schema.validate(req.body)
+    
+        if(result.error){
+            res.status(400);
+            return next(new Error(result.error.details[0].message))
+        }
+    
+        const {reqBy,_id,otp} = result.value;
+        User.findOne({_id : reqBy}).then(user =>{
+            if(user && user.status == "Active"){
+                Resider.findOne({ _id }).then(resider =>{
+                    if (resider.phone.otp == otp && new Date(resider.phone.expiry).getTime() > new Date().getTime()) {
+                        Resider.findOneAndUpdate({ _id  }, {$set:{status:"checked-in","phone.otp" : null,"phone.expiry" : null,"phone.isVerified":true}}, {new: true}, (err, doc)=>{
+                            if(doc){
+                                res.json({success:"OTP verified Successfully"});
+                            } else if(err){
+                                res.json(err);
+                                // return next(new Error(err));
+                            }
+                        });
+                    } else {
+                        if (resider.phone.otp != otp) {
+                            return next(new Error("Incorrect OTP"))
+                        }else if (new Date(resider.phone.expiry).getTime() < new Date().getTime()) {
+                            return next(new Error("OTP Expired"));
+                        }else{
+                            return next(new Error("OTP Verification failed! please try again"));
+                        }
+                    }
+                })
+            }
+        })}
+        catch (error) {
+            return next(new Error(error))
+        }
+}
+//api/residers/edit-phone
+async function editPhone(req,res,next) {
+    try {
+        let schema = joi.object({
+            reqBy:joi.string().required(),
+            _id:joi.string().required(),
+            phone:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required()
+        })
+        let result = schema.validate(req.body)
+    
+        if(result.error){
+            res.status(400);
+            return next(new Error(result.error.details[0].message))
+        }
+    
+        const {reqBy,_id,phone} = result.value;
+        User.findOne({_id : reqBy}).then(user =>{
+            if(user && user.status == "Active"){
+                /// send otp and update after verification
+            }
+        })}
+        catch (error) {
+            return next(new Error(error))
+        }
+}
+
+module.exports = { getResiders,addResider,checkOut,uploadImg,addExpense,todayBusiness,sendOtp,verifyOtp }
