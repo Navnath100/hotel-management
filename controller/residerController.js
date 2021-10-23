@@ -77,7 +77,7 @@ async function addResider(req,res,next) {
                 // const to = "navnathphapale100@gmail.com";
                 // sendEmail(sub,body,to);
                 residerCount++;
-                const data = {residerId:JSON.stringify(resider._id),phone:resider.phone.number}
+                const data = {_id:JSON.stringify(resider._id),phone:resider.phone.number}
                 req.body = data;
                 req.params = {id:user._id}
                 sendOtp(req,res,next)
