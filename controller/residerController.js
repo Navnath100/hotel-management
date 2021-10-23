@@ -385,7 +385,7 @@ async function sendOtp(req,res,next) {
         const {phone,_id , sendRes} = result.value;
         User.findOne({_id : req.params.id}).then(user =>{
             if(user && user.status == "Active"){
-                Resider.findOneAndUpdate({_id,"phone.number":phone  }, {$set:{"phone.otp":123456,"phone.expiry":new Date().getTime()+(1000*60*10)}}, {new: false}, (err, doc)=>{
+                Resider.findOneAndUpdate({_id:JSON.parse(_id),"phone.number":phone  }, {$set:{"phone.otp":123456,"phone.expiry":new Date().getTime()+(1000*60*10)}}, {new: false}, (err, doc)=>{
                     if(doc){
                         const sub = `OTP Verification`;
                         const body = `<h3>Your OTP is 123456.It will expire in 10 minutes</h3>`;
