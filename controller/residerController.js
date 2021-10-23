@@ -28,7 +28,7 @@ async function getResiders(req,res,next) {
     }
     
 }
-// /api/resider/addResider
+// /api/resider/add/:id
 async function addResider(req,res,next) {
     let schema = joi.object({
         roomNo:joi.string().pattern(/^[0-9]+$/).required(),
