@@ -134,7 +134,11 @@ async function checkIn(req,res,next){
             residers:joi.array().items(joi.object({
                 name:joi.string().min(1).max(60).required(),
                 email:joi.object({emailID:joi.string().required(),status:joi.string(),resetToken:joi.string(),expireToken:joi.date()}).required(),
-                phone:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required(),
+                phone:joi.object({
+                    number:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required(),
+                    otp:joi.string().pattern(/^[0-9]+$/),
+                    expiry:joi.date()
+                }).required(),
                 idProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required(),
                 addressProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required()
             }).required()).min(1).required(),
