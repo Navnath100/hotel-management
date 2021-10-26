@@ -153,8 +153,8 @@ async function checkIn(req,res,next){
                 Resider.findOne({$and: [{ "phone.number":residerData.phone },{_id:residerData._id} ] }).then(resider1 =>{
                     if(!resider1.phone.isVerified){
                         return next(new Error("Could not process for check in due to unverified phone no."))
-                    }else if (resider1.status = "checked-in") {
-                        return next(new Error("Already checked in"))
+                    }else if (resider1.status == "checked-in") {
+                        return next(new Error("Already checked in"));
                     }else{
                         Resider.findOneAndUpdate({$and: [{ "phone.number":residerData.phone },{_id:residerData._id} ] }, {$set:{status:"checked-in",residers:residerData.residers,checkIn}}, {new: true}, (err, doc)=>{
                             if(doc){
