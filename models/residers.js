@@ -6,7 +6,7 @@ const residerSchema = new Schema({
     roomNo : {type : String , required:true},
     amountPerDay : {type : String , required:true},
     isAC : {type : Boolean , required:true},
-    SrNo : {type : String , required:true},
+    // SrNo : {type : String , required:true},
     phone : {number : {type:String,required:true} , isVerified:{type:Boolean,required:false,default:false} , otp:{type:Number,required:false} , expiry:{type:Date,required:false}},
     status : {type : String , required:true , default:'Pending'},
     // email : {status: {type :String, default:'Pending'}, emailID:{type : String,required:true},resetToken : {type : String,required:false},expireToken : {type : Date,required:false}},

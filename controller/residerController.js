@@ -63,7 +63,7 @@ async function addResider(req,res,next) {
     // if (residerData.phone.isVerified == false) {
     //     return next(new Error("Please verify your phone no. via OTP"))
     // }
-    residerData["SrNo"] = residerCount,
+    // residerData["SrNo"] = residerCount,
     User.findOne({_id : req.params.id}).then(user =>{
         if(user){
             const resider = new Resider(residerData).save().then(resider=>{
@@ -79,7 +79,7 @@ async function addResider(req,res,next) {
                 //             Registered By : ${user.name}<br></p>`;
                 // const to = "navnathphapale100@gmail.com";
                 // sendEmail(sub,body,to);
-                residerCount++;
+                // residerCount++;
                 const data = {_id:JSON.stringify(resider._id),phone:resider.phone.number,sendRes:false}
                 req.body = data;
                 req.params = {id:user._id}
