@@ -10,7 +10,8 @@ const { upload,s3 } = require('../middlewares/uploadImg')
 const sendSMS = require('../middlewares/sms')
 let residerCount = null;
 if (residerCount == null) {
-        Resider.find().countDocuments().then(val =>residerCount=val+1);
+    console.log("residerCount is null");
+        Resider.find().countDocuments().then(val =>residerCount=val+1).catch(err =>console.log(err););
 }
 // /api/resider/
 async function getResiders(req,res,next) {
