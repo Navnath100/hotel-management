@@ -17,17 +17,160 @@ if (residerCount == null) {
 }
 // /api/resider/
 async function getResiders(req,res,next) {
-    console.log(i);
+    // try {
+    //     Resider.find().sort({ createdAt: -1 }).then(async(data)=>{
+    //         const count = await Resider.find().countDocuments();
+    //         if (data) {
+    //             res.json(data)
+    //         }
+    //     });
+    //     //res.json(await Employee.findOne({employeeID : 1}))
+    // } catch (error) {
+    //     return next(new Error(error))
+    // }
+
     try {
-        Resider.find().sort({ createdAt: -1 }).then(async(data)=>{
-            const count = await Resider.find().countDocuments();
-            if (data) {
-                res.json(data)
+        // const factoryID = req.params.factoryID;
+        const {name,phone,isAC, status, date_filter} = req.query;
+
+        const search = {};
+        if(phone && phone != "null"){
+            search.$or = [
+                // {"residers.phone.number" : {$regex:"^"+phone,$options:"$i"}},
+                // {"phone" : {$regex:"^"+phone,$options:"$i"}}
+            ]
+            var reg = /[0-9]/;
+            if(reg.test(phone)){
+                let firstPosibility = JSON.parse(phone);
+                let lastPosibility = JSON.parse(phone);
+                for(let i = 0;i<(10-JSON.parse(phone).toString().length);i++){
+                    firstPosibility = firstPosibility+"0";
+                    lastPosibility = lastPosibility+"9";
+                }
+                search.$or.push({"phone.number" : {$gte :JSON.parse(firstPosibility),$lte : JSON.parse(lastPosibility)}});
+                search.$or.push({"residers.phone.number" : {$gte :JSON.parse(firstPosibility),$lte : JSON.parse(lastPosibility)}});
             }
-        });
-        //res.json(await Employee.findOne({employeeID : 1}))
+        }
+        if(name && name != "null") search["residers.name"] = name;
+        if(isAC && isAC != "null") search.isAC = isAC;
+        if(status && status != "null") search.status=status;
+
+        if(date_filter == "today"){
+            search.createdAt = {
+                $gte: new Date().setHours(00, 00, 00),
+                $lt: new Date().setHours(23, 59, 59)
+            }
+        }
+
+        const dt = new Date();
+        const day = dt.getDay();
+        let n = null; // last Monday conversion
+
+        switch (dt.getDay()) {
+            case 0: n = -6; break;
+            case 1: n = 0; break;
+            case 2: n = -1; break;
+            case 3: n = -2; break;
+            case 4: n = -3; break;
+            case 5: n = -4; break;
+            case 6: n = -5; break;
+            default: "This never happens";
+        }
+
+        const monday = new Date().setDate(new Date().getDate() + n );
+        const sunday = new Date().setDate(new Date().getDate() + 6 );
+
+        if(date_filter == "this-week"){
+            search.createdAt = {
+                $gte: new Date(monday).setHours(00, 00, 00),
+                $lt: new Date()
+            }
+        }
+
+        if(date_filter == "last-week"){
+            const lastWeekMonday = new Date().setDate((new Date().getDate() + n)-7 );
+            const lastWeeksunday = new Date().setDate(new Date().getDate()+n-1);
+            search.createdAt = {
+                $gte: new Date(lastWeekMonday).setHours(00, 00, 00),
+                $lt: new Date(lastWeeksunday).setHours(23, 59, 59)
+            }
+        }
+
+        if(date_filter == "this-month"){
+            // const year = ff;
+            const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
+            const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth());
+            const lastDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(),daysInMonth);
+            search.createdAt = {
+                $gte: new Date(firstDayOfMonth).setHours(00, 00, 00),
+                $lt: new Date(lastDayOfMonth).setHours(23, 59, 59)
+            }
+        }
+
+        if(date_filter == "last-month"){
+            const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 0).getDate();
+            const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth()-1);
+            const lastDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth()-1,daysInMonth);
+            search.createdAt = {
+                $gte: new Date(firstDayOfMonth).setHours(00, 00, 00),
+                $lt: new Date(lastDayOfMonth).setHours(23, 59, 59)
+            }
+        }
+
+        if(date_filter == "last-three-months"){
+            const currentDate = new Date();
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth()+1;
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const firstDayOfMonth = new Date(year+"-"+(month-3)+"-"+1);
+            const lastDayOfMonth = new Date(year+"-"+month+"-"+currentDate.getDate());
+            search.createdAt = {
+                $gte: new Date(firstDayOfMonth).setHours(00, 00, 00),
+                $lt: new Date(lastDayOfMonth).setHours(23, 59, 59)
+            }
+        }
+        
+        if(date_filter == "this-year"){
+            const currentDate = new Date();
+            const year = currentDate.getFullYear();
+            const firstDayOfYear = new Date(year+"-"+1+"-"+1);
+            const lastDayOfYear = new Date(year+"-"+12+"-"+31);
+            search.createdAt = {
+                $gte: new Date(firstDayOfYear).setHours(00, 00, 00),
+                $lt: new Date(lastDayOfYear).setHours(23, 59, 59)
+            }
+        }
+
+        const result = {}
+        // result.totalItems = await Resider.find({$and: [{ "factory.factoryID": factoryID },search ]}).countDocuments();
+        let page;
+        let limit;
+        if (req.query.page && req.query.limit) {
+            page = JSON.parse(req.query.page);
+            limit = JSON.parse(req.query.limit);
+        }
+        else{
+            page = 1;
+            limit = result.totalItems;
+        }
+        const startIndex = (page - 1) * limit
+        const endIndex = page * limit
+        if (endIndex < await Resider.find(search).countDocuments().exec()) {
+            result.next = {
+                page: page + 1,
+                limit: limit
+            }
+        }
+        if (startIndex > 0) {
+            result.previous = {
+                page: page - 1,
+                limit: limit
+            }
+        }
+        result.residers = await Resider.find(search).limit(limit*1).skip((page-1)*limit).sort({ createdAt: -1 });
+        res.json(result);
     } catch (error) {
-        return next(new Error(error))
+        next(new Error(error));
     }
     
 }
@@ -490,5 +633,6 @@ async function editPhone(req,res,next) {
             return next(new Error(error))
         }
 }
+
 
 module.exports = { getResiders,addResider,checkIn,checkOut,uploadImg,addExpense,todayBusiness,sendOtp,verifyOtp }
