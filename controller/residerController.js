@@ -8,13 +8,13 @@ const AWS = require('aws-sdk')
 const uuid = require('uuid/v4')
 const { upload,s3 } = require('../middlewares/uploadImg')
 const sendSMS = require('../middlewares/sms')
-let residerCount = null;
-if (residerCount == null) {
-        Resider.find().countDocuments().then(val =>{
-            residerCount=val+1;
-            console.log("Updated Resider Count");
-        }).catch(err =>console.log(err));
-}
+// let residerCount = null;
+// if (residerCount == null) {
+//         Resider.find().countDocuments().then(val =>{
+//             residerCount=val+1;
+//             console.log("Updated Resider Count");
+//         }).catch(err =>console.log(err));
+// }
 // /api/resider/
 async function getResiders(req,res,next) {
     // try {
@@ -346,7 +346,7 @@ async function checkOut(req,res,next) {
     const {checkOutBy,phone} = result.value;
     User.findOne({_id : checkOutBy}).then(user =>{
         if(user && user.status == "Active"){
-            Resider.findOne({$and: [{ phone },{status:"checked-in"} ] }).then( (resider)=>{
+            Resider.findOne({$and: [{ "phone.number":phone },{status:"checked-in"} ] }).then( (resider)=>{
                 if(resider){
                     const perDaycost = 500;
                     let amount = 0;
@@ -396,7 +396,7 @@ async function checkOut(req,res,next) {
                         Bill.Total_Expenses = totalExpenses;
                         
 
-                        Resider.findOneAndUpdate({ phone  }, {$set:{status:"checked-out",checkOut:{by:checkOutBy,time:new Date().toISOString()}},bill:Bill}, {new: true}, (err, doc)=>{
+                        Resider.findOneAndUpdate({ "phone.number" : phone }, {$set:{status:"checked-out",checkOut:{by:checkOutBy,time:new Date().toISOString()}},bill:Bill}, {new: true}, (err, doc)=>{
                             if(doc){
                                 res.json(doc);
                                 const sub = `${resider.name}_ has checked out`;
@@ -404,7 +404,7 @@ async function checkOut(req,res,next) {
                                             <p>Dear ${resider.name}, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
                                             Your checkout is confirmed and your total payment amount is Rs.${amount+totalExpenses}. 
                                             Please don’t hesitate to contact us on {9999999999} for any concern.`;
-                                const to = ["navnathphapale100@gmail.com",resider.email.emailID];
+                                const to = ["navnathphapale100@gmail.com",resider.residers[0].email.emailID];
                                 sendCheckOutEmail(sub,body,to);
                                 // sendSMS(resider.name,amount+totalExpenses,resider.phone);
                             } else if(err){
@@ -633,6 +633,24 @@ async function editPhone(req,res,next) {
             return next(new Error(error))
         }
 }
+//api/residers/checked-in-residers/:id
+async function checkedInResiders(req,res,next) {
+    try {
+        User.findOne({_id : req.params.id}).then(user =>{
+            if(user && user.status == "Active"){
+                Resider.find({$and: [{ "status":"checked-in" } ] }).then(residers =>{
+                    res.json(residers);
+                }).catch(err => {
+                    return next(new Error(err))
+                })
+            }
+            else if(!user)
+                return next(new Error("Unauthorized access denied"))
+        })
+    } catch (error) {
+        return next(new Error(error));
+    }
+}
 
 
-module.exports = { getResiders,addResider,checkIn,checkOut,uploadImg,addExpense,todayBusiness,sendOtp,verifyOtp }
+module.exports = { getResiders,addResider,checkIn,checkOut,uploadImg,addExpense,todayBusiness,sendOtp,verifyOtp,checkedInResiders }

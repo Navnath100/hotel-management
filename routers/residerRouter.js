@@ -1,5 +1,5 @@
 const express = require('express')
-const { getResiders,addResider,checkOut,uploadImg,addExpense,todayBusiness,sendOtp,verifyOtp,checkIn } = require('../controller/residerController')
+const { getResiders,addResider,checkOut,uploadImg,addExpense,todayBusiness,sendOtp,verifyOtp,checkIn,checkedInResiders } = require('../controller/residerController')
 const { upload,s3 } = require('../middlewares/uploadImg')
 
 const residerRouter = express.Router()
@@ -14,5 +14,6 @@ residerRouter.put('/add-expenses',addExpense)
 residerRouter.get('/today-business/:id',todayBusiness)
 residerRouter.post('/send-otp/:id',sendOtp)
 residerRouter.post('/verify-otp/:id',verifyOtp)
+residerRouter.get('/checked-in-residers/:id',checkedInResiders)
 
 module.exports = { residerRouter }
