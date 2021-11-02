@@ -373,7 +373,7 @@ async function checkOut(req,res,next) {
     const {residerID,phone} = result.value;
     User.findOne({_id : req.params.id}).then(user =>{
         if(user && user.status == "Active"){
-            Resider.findOne({$and: [{ {_id:residerID},"phone.number":phone },{status:"checked-in"} ] }).then( (resider)=>{
+            Resider.findOne({$and: [{ _id:residerID,"phone.number":phone },{status:"checked-in"} ] }).then( (resider)=>{
                 if(resider){
                     const perDaycost = 500;
                     let amount = 0;
