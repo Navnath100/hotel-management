@@ -782,7 +782,7 @@ async function checkedInResiders(req,res,next) {
                     }
 
                     const result = {}
-                    Resider.find(search).countDocuments().then(count => {result["total"] = count})
+                    Resider.find(search).countDocuments().then(count => {result["total"] = count});
                     // result.totalItems = await Resider.find({$and: [{ "factory.factoryID": factoryID },search ]}).countDocuments();
                     let page;
                     let limit;
