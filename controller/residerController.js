@@ -2,6 +2,7 @@ const joi=require('joi')
 const { User } = require('../models/users')
 const { Resider } = require('../models/residers')
 const { StaffExpenses } = require('../models/staffExpenses')
+const { Transaction } = require('../models/transactions')
 const SendSMS = require('../middlewares/sms')
 const { sendEmail,sendCheckOutEmail } = require('../middlewares/notification');
 const AWS = require('aws-sdk')
@@ -180,6 +181,7 @@ async function addResider(req,res,next) {
         roomNo:joi.string().pattern(/^[0-9]+$/).required(),
         isAC:joi.boolean().required(),
         amountPerDay:joi.string().pattern(/^[0-9]+$/).required(),
+        advance:joi.number(),
         phone:joi.object({
             number:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required(),
             otp:joi.string().pattern(/^[0-9]+$/),
@@ -303,9 +305,34 @@ async function checkIn(req,res,next){
                     }else if (resider1.status == "checked-in") {
                         return next(new Error("Already checked in"));
                     }else{
-                        Resider.findOneAndUpdate({$and: [{ "phone.number":residerData.phone },{_id:residerData._id} ] }, {$set:{status:"checked-in",residers:residerData.residers,checkIn}}, {new: true}, (err, doc)=>{
+                        const update = {
+                            status:"checked-in",
+                            residers:residerData.residers,
+                            checkIn
+                        }
+                        if (resider1.advance && resider1.advance <= 0) {
+                            const transactionData = {
+                                amount : resider1.advance,
+                                by : req.params.id,
+                                description : `Advance for room no. ${resider1.roomNo}.`,
+                                type : "credit"
+                            }
+                            new Transaction(transactionData).save().then(transaction=>{
+                            });
+                        }
+                        Resider.findOneAndUpdate({$and: [{ "phone.number":residerData.phone },{_id:residerData._id} ] }, {$set:update}, {new: true}, (err, doc)=>{
                             if(doc){
                                 res.json(doc);
+                                const sub = `${resider.name}_ has checked out`;
+                                const body = `<h1>Checked In Successfully</h1>
+                                            <p>Dear customer, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
+                                            Your Check In is confirmed and your per day cost will be Rs.${doc.amountPerDay}. 
+                                            Please don’t hesitate to contact us on {9999999999} for any concern.`;
+                                const to = ["navnathphapale100@gmail.com"];
+                                for (let i = 0; i < doc.residers.length; i++) {
+                                    to.push(doc.residers[i].email.emailID);
+                                }
+                                sendEmail(sub,body,to);
                             } else if(err){
                                 res.json(err);
                                 console.log(err);
@@ -364,7 +391,6 @@ async function checkOut(req,res,next) {
                     //         amount = perDaycost * daysStayed
                     //         stayed = daysStayed;
                     // }
-
                     
                     if (new Date(resider.checkIn.time).getDate() == new Date().getDate()) {
                         let stay_hours = new Date().getTime() - new Date(resider.checkIn.time).getTime();
@@ -394,7 +420,6 @@ async function checkOut(req,res,next) {
                         const total = amount+totalExpenses
                         Bill.Net_Payment_amount = total;
                         Bill.Total_Expenses = totalExpenses;
-                        
 
                         Resider.findOneAndUpdate({ "phone.number" : phone }, {$set:{status:"checked-out",checkOut:{by:checkOutBy,time:new Date().toISOString()}},bill:Bill}, {new: true}, (err, doc)=>{
                             if(doc){
@@ -402,11 +427,19 @@ async function checkOut(req,res,next) {
                                 const sub = `${resider.name}_ has checked out`;
                                 const body = `<h1>Checked Out Successfully</h1>
                                             <p>Dear ${resider.name}, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
-                                            Your checkout is confirmed and your total payment amount is Rs.${amount+totalExpenses}. 
+                                            Your checkout is confirmed and your total payment amount is Rs.${doc.advance ? (amount+totalExpenses)-doc.advance : amount+totalExpenses}. 
                                             Please don’t hesitate to contact us on {9999999999} for any concern.`;
                                 const to = ["navnathphapale100@gmail.com",resider.residers[0].email.emailID];
                                 sendCheckOutEmail(sub,body,to);
                                 // sendSMS(resider.name,amount+totalExpenses,resider.phone);
+                                const transactionData = {
+                                    amount :doc.advance ? (doc.bill.Net_Payment_amount)-doc.advance : doc.bill.Net_Payment_amount,
+                                    by : checkOutBy,
+                                    type : "credit",
+                                    description : `Check-Out payment of room no. ${resider.roomNo}.`
+                                }
+                                new Transaction(transactionData).save().then(transaction=>{
+                                });
                             } else if(err){
                                 res.json(err);
                                 // return next(new Error(err));
@@ -638,15 +671,154 @@ async function checkedInResiders(req,res,next) {
     try {
         User.findOne({_id : req.params.id}).then(user =>{
             if(user && user.status == "Active"){
-                Resider.find({$and: [{ "status":"checked-in" } ] }).then(residers =>{
-                    res.json(residers);
-                }).catch(err => {
-                    return next(new Error(err))
-                })
+                // Resider.find({$and: [{ "status":"checked-in" } ] }).sort({ createdAt: -1 }).then(residers =>{
+                    const {name,phone,isAC, roomNo, date_filter} = req.query;
+                    const search = {status:"checked-in"};
+                    if(phone && phone != "null"){
+                        search.$or = [
+                            // {"residers.phone.number" : {$regex:"^"+phone,$options:"$i"}},
+                            // {"phone" : {$regex:"^"+phone,$options:"$i"}}
+                        ]
+                        var reg = /[0-9]/;
+                        if(reg.test(phone)){
+                            let firstPosibility = JSON.parse(phone);
+                            let lastPosibility = JSON.parse(phone);
+                            for(let i = 0;i<(10-JSON.parse(phone).toString().length);i++){
+                                firstPosibility = firstPosibility+"0";
+                                lastPosibility = lastPosibility+"9";
+                            }
+                            search.$or.push({"phone.number" : {$gte :JSON.parse(firstPosibility),$lte : JSON.parse(lastPosibility)}});
+                            search.$or.push({"residers.phone.number" : {$gte :JSON.parse(firstPosibility),$lte : JSON.parse(lastPosibility)}});
+                        }
+                    }
+                    if(name && name != "null") search["residers.name"] = {$regex:"^"+name,$options:"$i"};
+                    if(isAC && isAC != "null") search.isAC = isAC;
+                    // if(status && status != "null") search.status="checked-in";
+
+                    if(date_filter == "today"){
+                        search.createdAt = {
+                            $gte: new Date().setHours(00, 00, 00),
+                            $lt: new Date().setHours(23, 59, 59)
+                        }
+                    }
+
+                    const dt = new Date();
+                    const day = dt.getDay();
+                    let n = null; // last Monday conversion
+
+                    switch (dt.getDay()) {
+                        case 0: n = -6; break;
+                        case 1: n = 0; break;
+                        case 2: n = -1; break;
+                        case 3: n = -2; break;
+                        case 4: n = -3; break;
+                        case 5: n = -4; break;
+                        case 6: n = -5; break;
+                        default: "This never happens";
+                    }
+
+                    const monday = new Date().setDate(new Date().getDate() + n );
+                    const sunday = new Date().setDate(new Date().getDate() + 6 );
+
+                    if(date_filter == "this-week"){
+                        search.createdAt = {
+                            $gte: new Date(monday).setHours(00, 00, 00),
+                            $lt: new Date()
+                        }
+                    }
+
+                    if(date_filter == "last-week"){
+                        const lastWeekMonday = new Date().setDate((new Date().getDate() + n)-7 );
+                        const lastWeeksunday = new Date().setDate(new Date().getDate()+n-1);
+                        search.createdAt = {
+                            $gte: new Date(lastWeekMonday).setHours(00, 00, 00),
+                            $lt: new Date(lastWeeksunday).setHours(23, 59, 59)
+                        }
+                    }
+
+                    if(date_filter == "this-month"){
+                        // const year = ff;
+                        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
+                        const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth());
+                        const lastDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(),daysInMonth);
+                        search.createdAt = {
+                            $gte: new Date(firstDayOfMonth).setHours(00, 00, 00),
+                            $lt: new Date(lastDayOfMonth).setHours(23, 59, 59)
+                        }
+                    }
+
+                    if(date_filter == "last-month"){
+                        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 0).getDate();
+                        const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth()-1);
+                        const lastDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth()-1,daysInMonth);
+                        search.createdAt = {
+                            $gte: new Date(firstDayOfMonth).setHours(00, 00, 00),
+                            $lt: new Date(lastDayOfMonth).setHours(23, 59, 59)
+                        }
+                    }
+
+                    if(date_filter == "last-three-months"){
+                        const currentDate = new Date();
+                        const year = currentDate.getFullYear();
+                        const month = currentDate.getMonth()+1;
+                        const daysInMonth = new Date(year, month, 0).getDate();
+                        const firstDayOfMonth = new Date(year+"-"+(month-3)+"-"+1);
+                        const lastDayOfMonth = new Date(year+"-"+month+"-"+currentDate.getDate());
+                        search.createdAt = {
+                            $gte: new Date(firstDayOfMonth).setHours(00, 00, 00),
+                            $lt: new Date(lastDayOfMonth).setHours(23, 59, 59)
+                        }
+                    }
+                    
+                    if(date_filter == "this-year"){
+                        const currentDate = new Date();
+                        const year = currentDate.getFullYear();
+                        const firstDayOfYear = new Date(year+"-"+1+"-"+1);
+                        const lastDayOfYear = new Date(year+"-"+12+"-"+31);
+                        search.createdAt = {
+                            $gte: new Date(firstDayOfYear).setHours(00, 00, 00),
+                            $lt: new Date(lastDayOfYear).setHours(23, 59, 59)
+                        }
+                    }
+
+                    const result = {}
+                    Resider.find(search).countDocuments().then(count => {result["total"] = count})
+                    // result.totalItems = await Resider.find({$and: [{ "factory.factoryID": factoryID },search ]}).countDocuments();
+                    let page;
+                    let limit;
+                    if (req.query.page && req.query.limit) {
+                        page = JSON.parse(req.query.page);
+                        limit = JSON.parse(req.query.limit);
+                    }
+                    else{
+                        page = 1;
+                        limit = result.total;
+                    }
+                    const startIndex = (page - 1) * limit;
+                    const endIndex = page * limit;
+                    if (endIndex < result.total) {
+                        result.next = {
+                            page: page + 1,
+                            limit: limit
+                        }
+                    }
+                    if (startIndex > 0) {
+                        result.previous = {
+                            page: page - 1,
+                            limit: limit
+                        }
+                    }
+                    // Resider.find({$and: [{ "status":"checked-in" } ] }).sort({ createdAt: -1 }).then(residers =>{
+                    Resider.find(search).limit(limit*1).skip((page-1)*limit).sort({ createdAt: -1 }).then(residers => {
+                        result.residers = residers;
+                        res.json(result);
+                    }).catch(err => {
+                        return next(new Error(err))
+                    });
             }
             else if(!user)
                 return next(new Error("Unauthorized access denied"))
-        })
+        });
     } catch (error) {
         return next(new Error(error));
     }
