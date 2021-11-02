@@ -360,7 +360,7 @@ async function checkIn(req,res,next){
 // /api/resider/check-out
 async function checkOut(req,res,next) {
     let schema = joi.object({
-        checkOutBy:joi.string().required(),
+        residerID:joi.string().required(),
         phone:joi.string().length(10).pattern(/^[0-9]+$/).required()
     })
     let result = schema.validate(req.body)
@@ -370,10 +370,10 @@ async function checkOut(req,res,next) {
         return next(new Error(result.error.details[0].message))
     }
 
-    const {checkOutBy,phone} = result.value;
-    User.findOne({_id : checkOutBy}).then(user =>{
+    const {residerID,phone} = result.value;
+    User.findOne({_id : req.params.id}).then(user =>{
         if(user && user.status == "Active"){
-            Resider.findOne({$and: [{ "phone.number":phone },{status:"checked-in"} ] }).then( (resider)=>{
+            Resider.findOne({$and: [{ {_id:residerID},"phone.number":phone },{status:"checked-in"} ] }).then( (resider)=>{
                 if(resider){
                     const perDaycost = 500;
                     let amount = 0;
@@ -421,7 +421,7 @@ async function checkOut(req,res,next) {
                         Bill.Net_Payment_amount = total;
                         Bill.Total_Expenses = totalExpenses;
 
-                        Resider.findOneAndUpdate({ "phone.number" : phone }, {$set:{status:"checked-out",checkOut:{by:checkOutBy,time:new Date().toISOString()}},bill:Bill}, {new: true}, (err, doc)=>{
+                        Resider.findOneAndUpdate({ "phone.number" : phone }, {$set:{status:"checked-out",checkOut:{by:req.params.id,time:new Date().toISOString()}},bill:Bill}, {new: true}, (err, doc)=>{
                             if(doc){
                                 res.json(doc);
                                 const sub = `${resider.name}_ has checked out`;
@@ -434,7 +434,7 @@ async function checkOut(req,res,next) {
                                 // sendSMS(resider.name,amount+totalExpenses,resider.phone);
                                 const transactionData = {
                                     amount :doc.advance ? (doc.bill.Net_Payment_amount)-doc.advance : doc.bill.Net_Payment_amount,
-                                    by : checkOutBy,
+                                    by : req.params.id,
                                     type : "credit",
                                     description : `Check-Out payment of room no. ${resider.roomNo}.`
                                 }
