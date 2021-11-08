@@ -464,7 +464,6 @@ async function addExpense(req,res,next) {
     try {
         let schema = joi.object({
             addedBy:joi.string().required(),
-            phone:joi.number().required(),
             item:joi.string().required(),
             charges:joi.number().required()
         })
@@ -818,6 +817,8 @@ async function checkedInResiders(req,res,next) {
             }
             else if(!user)
                 return next(new Error("Unauthorized access denied"))
+        }).catch(err => {
+            return next(new Error(err))
         });
     } catch (error) {
         return next(new Error(error));
