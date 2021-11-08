@@ -463,7 +463,7 @@ async function checkOut(req,res,next) {
 async function addExpense(req,res,next) {
     try {
         let schema = joi.object({
-            addedBy:joi.string().required(),
+            _id:joi.string().required(),
             item:joi.string().required(),
             charges:joi.number().required()
         })
@@ -474,12 +474,12 @@ async function addExpense(req,res,next) {
             return next(new Error(result.error.details[0].message))
         }
     
-        const {item,charges,addedBy,phone} = result.value;
-        User.findOne({_id : addedBy}).then(user =>{
+        const {item,charges,_id} = result.value;
+        User.findOne({_id : req.params.id}).then(user =>{
             if(user && user.status == "Active"){
-                Resider.findOne({$and: [{ phone },{status:"checked-in"} ] }).then(resider =>{
+                Resider.findOne({$and: [{ _id },{status:"checked-in"} ] }).then(resider =>{
                     if(resider && resider.status == "checked-in"){
-                        Resider.findOneAndUpdate({$and: [{ phone },{status:"checked-in"} ] }, {$push:{expenses:{item,charges,addedBy}}}, {new: false}, (err, doc)=>{
+                        Resider.findOneAndUpdate({$and: [{ _id },{status:"checked-in"} ] }, {$push:{expenses:{item,charges,addedBy:req.params.id}}}, {new: false}, (err, doc)=>{
                             if(doc){
                                 res.json(doc);
                             } else if(err){
@@ -490,6 +490,8 @@ async function addExpense(req,res,next) {
                         });
                     }else
                         return next(new Error("Cusromer Not checked in using "+phone));
+                }).catch(err=>{
+                    return next(new Error(err))
                 });
             } 
             else
