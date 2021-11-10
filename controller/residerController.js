@@ -5,6 +5,7 @@ const { StaffExpenses } = require('../models/staffExpenses')
 const { Transaction } = require('../models/transactions')
 const SendSMS = require('../middlewares/sms')
 const { sendEmail,sendCheckOutEmail } = require('../middlewares/notification');
+const { addTransaction } = require('../controller/transactionController');
 const AWS = require('aws-sdk')
 const uuid = require('uuid/v4')
 const { upload,s3 } = require('../middlewares/uploadImg')
@@ -187,17 +188,6 @@ async function addResider(req,res,next) {
             otp:joi.string().pattern(/^[0-9]+$/),
             expiry:joi.date()
         }).required(),
-        // residers:joi.array().items(joi.object({
-        //     name:joi.string().min(1).max(60).required(),
-        //     email:joi.object({emailID:joi.string().required(),status:joi.string(),resetToken:joi.string(),expireToken:joi.date()}).required(),
-        //     idProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required(),
-        //     addressProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required()
-        // }).required()).min(1).required(),
-        // name:joi.string().min(1).max(60).required(),
-        // email:joi.object({emailID:joi.string().required(),status:joi.string(),resetToken:joi.string(),expireToken:joi.date()}).required(),
-        // idProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required(),
-        // addressProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required(),
-        // checkIn:joi.object({by:joi.string().required(),time:joi.date()}).required() 
     })
     let result = schema.validate(req.body)
     if(result.error){
@@ -209,29 +199,42 @@ async function addResider(req,res,next) {
     //     return next(new Error("Please verify your phone no. via OTP"))
     // }
     // residerData["SrNo"] = residerCount,
-    User.findOne({_id : req.params.id}).then(user =>{
-        if(user){
-            const resider = new Resider(residerData).save().then(resider=>{
-                // const checkinTime = (new Date(resider.checkIn.time).getTime())+(330*60*1000);
-                // const sub = `${resider.name}_ has checked in`;
-                // const body = `<h1>Custmer Details</h1>
-                //             <p>Name : ${resider.name}<br>
-                //             Email : ${resider.email.emailID}<br>
-                //             Phone no. : ${resider.phone}<br>
-                //             ID Proof : ${resider.idProof.type}<br>
-                //             Address Proof : ${resider.addressProof.type}<br>
-                //             Checkin Time : ${new Date(checkinTime).toLocaleString()}<br>
-                //             Registered By : ${user.name}<br></p>`;
-                // const to = "navnathphapale100@gmail.com";
-                // sendEmail(sub,body,to);
-                // residerCount++;
-                const data = {_id:JSON.stringify(resider._id),phone:resider.phone.number,sendRes:false}
-                req.body = data;
-                req.params = {id:user._id}
-                sendOtp(req,res,next)
-                res.json(resider);
-            });
-            
+    User.findOne({_id : req.params.id}).then(async(user) =>{
+        if(user && user.status == "Active"){
+            if(residerData.advance){
+                const transactionData = {
+                    amount : residerData.advance,
+                    by : req.params.id,
+                    type : "credit", // debit/credit
+                    description : "Advance for check-in in "+residerData.roomNo,
+                    transactionFor : "check-in-advance", // check-out/check-in/check-in-advance/staff-expenses/withdrawel etc.
+                }
+                addTransaction(transactionData).then(transactionResult=>{
+                    if(transactionResult){
+                        return next(new Error(transactionResult))
+                    }
+                });
+            }
+                const resider = new Resider(residerData).save().then(async(resider)=>{
+                    // const checkinTime = (new Date(resider.checkIn.time).getTime())+(330*60*1000);
+                    // const sub = `${resider.name}_ has checked in`;
+                    // const body = `<h1>Custmer Details</h1>
+                    //             <p>Name : ${resider.name}<br>
+                    //             Email : ${resider.email.emailID}<br>
+                    //             Phone no. : ${resider.phone}<br>
+                    //             ID Proof : ${resider.idProof.type}<br>
+                    //             Address Proof : ${resider.addressProof.type}<br>
+                    //             Checkin Time : ${new Date(checkinTime).toLocaleString()}<br>
+                    //             Registered By : ${user.name}<br></p>`;
+                    // const to = "navnathphapale100@gmail.com";
+                    // sendEmail(sub,body,to);
+                    // residerCount++;
+                    const data = {_id:JSON.stringify(resider._id),phone:resider.phone.number,sendRes:false}
+                    req.body = data;
+                    req.params = {id:user._id}
+                    sendOtp(req,res,next)
+                    res.json(resider);
+                });
         }else if(!user)
             return next(new Error("Unauthorized access denied"))
     }).catch(err=>{
@@ -361,7 +364,7 @@ async function checkIn(req,res,next){
 async function checkOut(req,res,next) {
     let schema = joi.object({
         residerID:joi.string().required(),
-        phone:joi.string().length(10).pattern(/^[0-9]+$/).required()
+        // phone:joi.string().length(10).pattern(/^[0-9]+$/).required()
     })
     let result = schema.validate(req.body)
 
@@ -373,9 +376,9 @@ async function checkOut(req,res,next) {
     const {residerID,phone} = result.value;
     User.findOne({_id : req.params.id}).then(user =>{
         if(user && user.status == "Active"){
-            Resider.findOne({$and: [{ _id:residerID,"phone.number":phone },{status:"checked-in"} ] }).then( (resider)=>{
+            Resider.findOne({$and: [{ _id:residerID },{status:"checked-in"} ] }).then( (resider)=>{
                 if(resider){
-                    const perDaycost = 500;
+                    const perDaycost = resider.amountPerDay;
                     let amount = 0;
                     let stayed;
                     // if(new Date().getDate()-new Date(resider.checkIn.time).getDate() == 0){
@@ -421,7 +424,7 @@ async function checkOut(req,res,next) {
                         Bill.Net_Payment_amount = total;
                         Bill.Total_Expenses = totalExpenses;
 
-                        Resider.findOneAndUpdate({ "phone.number" : phone }, {$set:{status:"checked-out",checkOut:{by:req.params.id,time:new Date().toISOString()}},bill:Bill}, {new: true}, (err, doc)=>{
+                        Resider.findOneAndUpdate({ _id:residerID }, {$set:{status:"checked-out",checkOut:{by:req.params.id,time:new Date().toISOString()}},bill:Bill}, {new: true}, (err, doc)=>{
                             if(doc){
                                 res.json(doc);
                                 const sub = `${resider.name}_ has checked out`;
@@ -432,14 +435,30 @@ async function checkOut(req,res,next) {
                                 const to = ["navnathphapale100@gmail.com",resider.residers[0].email.emailID];
                                 sendCheckOutEmail(sub,body,to);
                                 // sendSMS(resider.name,amount+totalExpenses,resider.phone);
-                                const transactionData = {
-                                    amount :doc.advance ? (doc.bill.Net_Payment_amount)-doc.advance : doc.bill.Net_Payment_amount,
-                                    by : req.params.id,
-                                    type : "credit",
-                                    description : `Check-Out payment of room no. ${resider.roomNo}.`
+                                // const transactionData = {
+                                //     amount :doc.advance ? (doc.bill.Net_Payment_amount)-doc.advance : doc.bill.Net_Payment_amount,
+                                //     by : req.params.id,
+                                //     type : "credit",
+                                //     description : `Check-Out payment of room no. ${resider.roomNo}.`
+                                // }
+                                // new Transaction(transactionData).save().then(transaction=>{
+                                // });
+
+                                if(doc.bill){
+                                    const transactionData = {
+                                        amount : doc.advance ? (doc.bill.Net_Payment_amount)-doc.advance : doc.bill.Net_Payment_amount,
+                                        by : req.params.id,
+                                        type : "credit", // debit/credit
+                                        description : "Check-Out of room No. "+doc.roomNo,
+                                        transactionFor : "check-out", // check-out/check-in/check-in-advance/staff-expenses/withdrawel etc.
+                                    }
+                                    addTransaction(transactionData).then(transactionResult=>{
+                                        if(transactionResult){
+                                            return next(new Error(transactionResult))
+                                        }
+                                    });
                                 }
-                                new Transaction(transactionData).save().then(transaction=>{
-                                });
+
                             } else if(err){
                                 res.json(err);
                                 // return next(new Error(err));
@@ -448,9 +467,10 @@ async function checkOut(req,res,next) {
 
                         // res.json(Bill);
                 
-                }else if(resider == null){
-                    return next(new Error("Enter valid phone no."));
                 }
+                // else if(resider == null){
+                //     return next(new Error("Enter valid phone no."));
+                // }
             });
         } 
         else

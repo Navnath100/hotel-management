@@ -110,40 +110,135 @@ async function getTransactions(req,res,next) {
     }
     
 }
-async function addTransaction(req,res,next) {
+async function addTransaction(body) {
     try {
         let schema = joi.object({
-            description:joi.string().required(),
-            type:joi.string().required(),
             amount:joi.number().required(),
+            by:joi.string().required(),
+            type:joi.string().required(),
+            description:joi.string().required(),
+            transactionFor:joi.string().required(),
             item:joi.string()
+        })
+        let result = schema.validate(body)
+    
+        if(result.error){
+            return new Error(result.error.details[0].message)
+        }
+        
+        const transactionData = result.value;
+        User.findOne({_id : transactionData.by}).then(user =>{
+            if(user && user.status == "Active"){
+                Transaction.find().sort({_id:-1}).limit(1).then(balance => {
+                    transactionData.previousBalance = balance[0].availableBalance;
+                    transactionData.availableBalance = transactionData.type == "credit" ? balance[0].availableBalance + transactionData.amount : balance[0].availableBalance - transactionData.amount;
+                    new Transaction(transactionData).save().catch(err=>{
+                        return new Error(err);
+                    });
+                }).catch(err=>{
+                    return new Error(err);
+                })
+            }
+            else
+                return new Error("Unauthorized access denied")
+        }).catch(err=>{
+            return new Error(err)
+        })
+    } catch (error) {
+        console.log(error);
+        return new Error(error)
+    }
+    
+}
+async function addFirstTransaction() {
+    try {
+        new Transaction({
+            amount : 0,
+            availableBalance : 0,
+            previousBalance : 0,
+            by : "Navnath Phapale", // Object id of employee
+            type : "credit", // debit/credit
+            description : "First Tansaction"
+        }).save().then(transaction=>{
+            console.log("transaction : ",transaction);
+        }).catch(error=>{
+            console.log(error);
+        });
+    } catch (error) {
+        console.log(error);
+    }
+    
+}
+// /api/transaction/staff-expenses/add/:id
+async function  addStaffExpense(req,res,next) {
+    try {
+        let schema = joi.object({
+            amount:joi.number().required(),
+            item:joi.string().required()
         })
         let result = schema.validate(req.body)
     
         if(result.error){
-            res.status(400);
             return next(new Error(result.error.details[0].message))
         }
-        
-        const transactionData = result.value;
-        transactionData.by = req.params.id;
-        User.findOne({_id : transactionData.by}).then(user =>{
-            if(user && user.status == "Active"){
-                new Transaction(transactionData).save().then(transaction=>{
-                    res.json(transaction);
-                });
-            }
-            else
-                return next(new Error("Unauthorized access denied"))
-        }).catch(err=>{
-            return next(new Error(err))
-        })
-    
+
+        const transactionData = {
+            amount : result.value.amount,
+            by : req.params.id,
+            type : "debit", // debit/credit
+            description : "Staff Expense",
+            transactionFor : "staff-expense", // check-out/check-in/check-in-advance/staff-expense/withdrawel etc.
+        }
+
+        addTransaction(transactionData).then(transactionResult=>{
+            if(transactionResult){
+                return next(new Error(transactionResult))
+                console.log(transactionResult);
+            }else
+                res.json({Success:"Added Successfully"});
+        });
     } catch (error) {
-        console.log(error);
         return next(new Error(error))
     }
+}
+async function withdrawal(req,res,next) {
+    try {
+        let schema = joi.object({
+            amount:joi.number().required(),
+        })
+        let result = schema.validate(req.body)
     
+        if(result.error){
+            return new Error(result.error.details[0].message)
+        }
+
+        
+        const transactionData = {
+            amount : result.value.amount,
+            by : req.params.id,
+            type : "debit", // debit/credit
+            description : "Withdrew",
+            transactionFor : "Withdrew", // check-out/check-in/check-in-advance/staff-expense/Withdrew etc.
+        }
+        Transaction.find().sort({_id:-1}).limit(1).then(balance => {
+            if (balance[0].availableBalance < transactionData.amount) {
+                return next(new Error("Transaction could not be done due to low balance"))
+            }else{
+                // console.log(transactionData);
+                addTransaction(transactionData).then(transactionResult=>{
+                    if(transactionResult){
+                        return next(new Error(transactionResult))
+                    }else{
+                        res.json({Success:"Transaction Successful"});
+                    }
+                });
+            }
+        }).catch(err=>{
+            return new Error(err);
+        })
+    } catch (error) {
+        return next(new Error(error))
+    }
 }
     
-module.exports = { getTransactions, addTransaction }
+module.exports = { addFirstTransaction,addTransaction, getTransactions, addStaffExpense, addStaffExpense, withdrawal }

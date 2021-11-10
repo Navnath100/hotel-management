@@ -1,10 +1,11 @@
 const express = require('express')
-const { getTransactions, addTransaction } = require('../controller/transactionController')
+const { getTransactions, addStaffExpense,withdrawal } = require('../controller/transactionController')
 
 const transactionRouter = express.Router()
 
 // /api/transaction
 transactionRouter.get('/' , getTransactions)
-transactionRouter.post('/add/:id' , addTransaction)
+transactionRouter.post('/staff-expense/:id' , addStaffExpense)
+transactionRouter.post('/withdrawel/:id' , withdrawal)
 
 module.exports = { transactionRouter }
