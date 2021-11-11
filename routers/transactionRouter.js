@@ -4,7 +4,7 @@ const { getTransactions, addStaffExpense,withdrawal } = require('../controller/t
 const transactionRouter = express.Router()
 
 // /api/transaction
-transactionRouter.get('/' , getTransactions)
+transactionRouter.get('/:id' , getTransactions)
 transactionRouter.post('/staff-expense/:id' , addStaffExpense)
 transactionRouter.post('/withdrawel/:id' , withdrawal)
 
