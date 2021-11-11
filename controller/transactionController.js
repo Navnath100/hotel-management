@@ -102,7 +102,7 @@ async function getTransactions(req,res,next) {
                     search.transactionFor = transactionFor
                 }
                 
-                Transaction.find(search).then(transactions=>{
+                Transaction.find(search).sort({ createdAt: -1 }).then(transactions=>{
                     if(transactions.length >= 0){
                         let todayExpenses = 0;
                         for (let i = 0; i < transactions.length; i++)
