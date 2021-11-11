@@ -6,7 +6,7 @@ const { sendEmail } = require('../middlewares/notification');
 // /api/resider/
 async function getStaffExpenses(req,res,next) {
     try {
-        StaffExpenses.find().sort({ createdAt: -1 }).then((data)=>{
+        StaffExpenses.find().sort({ createdAt: 1 }).then((data)=>{
             if (data) {
                 res.json({data,count:data.length})
             }

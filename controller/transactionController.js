@@ -191,6 +191,7 @@ async function  addStaffExpense(req,res,next) {
 
         const transactionData = {
             amount : result.value.amount,
+            item: result.value.item,
             by : req.params.id,
             type : "debit", // debit/credit
             description : "Staff Expense",
