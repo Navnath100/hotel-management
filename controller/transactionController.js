@@ -101,8 +101,37 @@ async function getTransactions(req,res,next) {
                 if (transactionFor && transactionFor != null) {
                     search.transactionFor = transactionFor
                 }
+
+                let page;
+                let limit;
+                let totalDocCount;
+                Transaction.find(search).countDocuments().exec().then(count=>{
+                    totalDocCount = count;
+                });
+                if (req.query.page && req.query.limit) {
+                    page = JSON.parse(req.query.page);
+                    limit = JSON.parse(req.query.limit);
+                }
+                else{
+                    page = 1;
+                    limit = result.totalItems;
+                }
+                const startIndex = (page - 1) * limit
+                const endIndex = page * limit
+                if (endIndex < totalDocCount) {
+                    result.next = {
+                        page: page + 1,
+                        limit: limit
+                    }
+                }
+                if (startIndex > 0) {
+                    result.previous = {
+                        page: page - 1,
+                        limit: limit
+                    }
+                }
                 
-                Transaction.find(search).sort({ createdAt: -1 }).then(transactions=>{
+                Transaction.find(search).limit(limit*1).skip((page-1)*limit).sort({ createdAt: -1 }).then(transactions=>{
                     if(transactions.length >= 0){
                         let todayExpenses = 0;
                         for (let i = 0; i < transactions.length; i++)

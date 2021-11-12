@@ -206,7 +206,7 @@ async function addResider(req,res,next) {
                     amount : residerData.advance,
                     by : req.params.id,
                     type : "credit", // debit/credit
-                    description : "Advance for check-in in "+residerData.roomNo,
+                    description : "Advance for check-in in room no."+residerData.roomNo,
                     transactionFor : "check-in-advance", // check-out/check-in/check-in-advance/staff-expenses/withdrawel etc.
                 }
                 addTransaction(transactionData).then(transactionResult=>{
