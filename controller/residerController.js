@@ -330,7 +330,7 @@ async function checkIn(req,res,next){
                             new Transaction(transactionData).save().then(transaction=>{
                             });
                         }
-                        Resider.findOneAndUpdate({$and: [{ "phone.number":residerData.phone },{_id:residerData._id} ] }, {$set:update}, {new: true}, (err, doc)=>{
+                        Resider.findOneAndUpdate({_id:residerData._id}, {$set:update}, {new: true}, (err, doc)=>{
                             if(doc){
                                 res.json(doc);
                                 const sub = `${resider.name}_ has checked out`;
@@ -436,7 +436,7 @@ async function checkOut(req,res,next) {
                                 const sub = `Guest in room no.${resider.roomNo}_ has checked out`;
                                 const body = `<h1>Checked Out Successfully</h1>
                                             <p>Dear ${"Guest"}, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
-                                            Your checkout is confirmed and your total payment amount is Rs.${doc.advance ? (amount+totalExpenses)-doc.advance : amount+totalExpenses}. 
+                                            Your checkout is confirmed and your total payment amount is Rs.${doc.advance ? (JSON.parse(amount)+totalExpenses)-doc.advance : JSON.parse(amount)+totalExpenses}. 
                                             Please don’t hesitate to contact us on {9999999999} for any concern.`;
                                 const to = [resider.residers[0].email.emailID];
                                 sendCheckOutEmail(sub,body,to);
