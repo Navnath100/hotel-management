@@ -338,7 +338,7 @@ async function checkIn(req,res,next){
                                             <p>Dear customer, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
                                             Your Check In is confirmed and your per day cost will be Rs.${doc.amountPerDay}. 
                                             Please don’t hesitate to contact us on {9999999999} for any concern.`;
-                                const to = ["navnathphapale100@gmail.com"];
+                                const to = [doc.email.emailID];
                                 for (let i = 0; i < doc.residers.length; i++) {
                                     to.push(doc.residers[i].email.emailID);
                                 }
@@ -427,10 +427,9 @@ async function checkOut(req,res,next) {
                         for (let i = 0; i < resider.expenses.length; i++) {
                             totalExpenses +=resider.expenses[i].charges;
                         }
-                        const total = amount+totalExpenses
-                        Bill.Net_Payment_amount = total;
+                        // const total = amount+totalExpenses
+                        Bill.Net_Payment_amount = JSON.parse(amount)+totalExpenses;
                         Bill.Total_Expenses = totalExpenses;
-
                         Resider.findOneAndUpdate({ _id:residerID }, {$set:{status:"checked-out",checkOut:{by:req.params.id,time:new Date().toISOString()}},bill:Bill}, {new: true}, (err, doc)=>{
                             if(doc){
                                 res.json(doc);
@@ -602,7 +601,7 @@ async function sendOtp(req,res,next) {
                     if(doc){
                         const sub = `OTP Verification`;
                         const body = `<h3>Your OTP is ${OTP}.It will expire in 10 minutes</h3>`;
-                        const to = [phone,"navnathphapale100@gmail.com"];
+                        const to = [phone];
                         sendEmail(sub,body,to);
                         console.log(sub,body,to);
                         if(sendRes){
