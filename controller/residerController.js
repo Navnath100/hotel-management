@@ -10,6 +10,7 @@ const AWS = require('aws-sdk')
 const uuid = require('uuid/v4')
 const { upload,s3 } = require('../middlewares/uploadImg')
 const sendSMS = require('../middlewares/sms')
+
 // let residerCount = null;
 // if (residerCount == null) {
 //         Resider.find().countDocuments().then(val =>{
@@ -184,9 +185,10 @@ async function addResider(req,res,next) {
         amountPerDay:joi.string().pattern(/^[0-9]+$/).required(),
         advance:joi.number(),
         phone:joi.object({
-            number:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required(),
-            otp:joi.string().pattern(/^[0-9]+$/),
-            expiry:joi.date()
+            number:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required()
+        }).required(),
+        email:joi.object({
+            emailID:joi.string().required()
         }).required(),
     })
     let result = schema.validate(req.body)
@@ -229,7 +231,12 @@ async function addResider(req,res,next) {
                     // const to = "navnathphapale100@gmail.com";
                     // sendEmail(sub,body,to);
                     // residerCount++;
-                    const data = {_id:JSON.stringify(resider._id),phone:resider.phone.number,sendRes:false}
+                    const data = {
+                        _id:JSON.stringify(resider._id),
+                        // phone:resider.phone.number,
+                        phone:resider.email.emailID,
+                        sendRes:false
+                    }
                     req.body = data;
                     req.params = {id:user._id}
                     sendOtp(req,res,next)
@@ -427,12 +434,12 @@ async function checkOut(req,res,next) {
                         Resider.findOneAndUpdate({ _id:residerID }, {$set:{status:"checked-out",checkOut:{by:req.params.id,time:new Date().toISOString()}},bill:Bill}, {new: true}, (err, doc)=>{
                             if(doc){
                                 res.json(doc);
-                                const sub = `${resider.name}_ has checked out`;
+                                const sub = `Guest in room no.${resider.roomNo}_ has checked out`;
                                 const body = `<h1>Checked Out Successfully</h1>
-                                            <p>Dear ${resider.name}, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
+                                            <p>Dear ${"Guest"}, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
                                             Your checkout is confirmed and your total payment amount is Rs.${doc.advance ? (amount+totalExpenses)-doc.advance : amount+totalExpenses}. 
                                             Please don’t hesitate to contact us on {9999999999} for any concern.`;
-                                const to = ["navnathphapale100@gmail.com",resider.residers[0].email.emailID];
+                                const to = [resider.residers[0].email.emailID];
                                 sendCheckOutEmail(sub,body,to);
                                 // sendSMS(resider.name,amount+totalExpenses,resider.phone);
                                 // const transactionData = {
@@ -534,7 +541,7 @@ async function todayBusiness(req,res,next) {
                 const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                 const client = {}
 
-                Resider.find({createdAt: {$gte: today}}).then(today_business=>{
+                Resider.find({createdAt: {$gte: today},updatedAt: {$gte: today}}).then(today_business=>{
                     if(today_business.length > 0){
                         let totalAmount = 0;
                         for (let i = 0; i < today_business.length; i++) {
@@ -543,22 +550,21 @@ async function todayBusiness(req,res,next) {
                         }
                         client["todayBusiness"] = totalAmount;
                         client["todayCustomersCount"] = today_business.length;
-                        client["todayCustomers"] = today_business;
+                        // client["todayCustomers"] = today_business;
                         
                         // res.json(client);
-                        StaffExpenses.find({createdAt: {$gte: today}}).then(today_expenses=>{
+                        Transaction.find({createdAt: {$gte: today},transactionType:"staff-expense"}).then(today_expenses=>{
                             if(today_expenses.length >= 0){
                                 let todayExpenses = 0;
                                 for (let i = 0; i < today_expenses.length; i++)
-                                    todayExpenses += today_expenses[i].charges                      
+                                    todayExpenses -= today_expenses[i].charges                      
                                 client["todayStaffExpenses"] = todayExpenses;
                             }
                             res.json(client);
                         });
 
                     }else
-                        res.json({error:"Entries not found for today."})
-                        
+                        res.json({error:"Entries not found for today."})   
                 });
             }
             else
@@ -576,7 +582,8 @@ async function todayBusiness(req,res,next) {
 async function sendOtp(req,res,next) {
     try {
         let schema = joi.object({
-            phone:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required(),
+            phone:joi.string().required(),
+            // phone:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required(),
             _id:joi.string().required(),
             sendRes:joi.boolean().required()
         })
@@ -590,12 +597,14 @@ async function sendOtp(req,res,next) {
         const {phone,_id , sendRes} = result.value;
         User.findOne({_id : req.params.id}).then(user =>{
             if(user && user.status == "Active"){
-                Resider.findOneAndUpdate({_id:JSON.parse(_id),"phone.number":phone  }, {$set:{"phone.otp":123456,"phone.expiry":new Date().getTime()+(1000*60*10)}}, {new: false}, (err, doc)=>{
+                const OTP = Math.floor(100000 + Math.random() * 900000)
+                Resider.findOneAndUpdate({_id:JSON.parse(_id)}, {$set:{"phone.otp":OTP,"phone.expiry":new Date().getTime()+(1000*60*10)}}, {new: false}, (err, doc)=>{
                     if(doc){
                         const sub = `OTP Verification`;
-                        const body = `<h3>Your OTP is 123456.It will expire in 10 minutes</h3>`;
-                        const to = "navnathphapale0038@gmail.com";
+                        const body = `<h3>Your OTP is ${OTP}.It will expire in 10 minutes</h3>`;
+                        const to = [phone,"navnathphapale100@gmail.com"];
                         sendEmail(sub,body,to);
+                        console.log(sub,body,to);
                         if(sendRes){
                             res.json({success:"OTP sent successfully"})
                         }                    
