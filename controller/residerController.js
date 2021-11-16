@@ -309,7 +309,7 @@ async function checkIn(req,res,next){
         User.findOne({_id : req.params.id}).then(user =>{
             if(user && user.status == "Active"){
                 const checkIn={by:req.params.id,time:new Date()}
-                Resider.findOne({$and: [{ "phone.number":residerData.phone },{_id:residerData._id} ] }).then(resider1 =>{
+                Resider.findOne({$and: [{_id:residerData._id} ] }).then(resider1 =>{
                     if(!resider1.phone.isVerified){
                         return next(new Error("Could not process for check in due to unverified phone no."))
                     }else if (resider1.status == "checked-in") {
@@ -344,13 +344,15 @@ async function checkIn(req,res,next){
                                 sendEmail(sub,body,to);
                                 res.json(doc);
                             } else if(err){
+                                console.log("Error Found !bug inside residerController.js->checkIn() ",err);
                                 res.json(err);
-                                console.log(err);
                                 // return next(new Error(err));
                             }else{
+                                console.log("Else block executed !bug inside residerController.js->checkIn()->line 354");
                                 return next(new Error("Something went wrong!Either you didn't entered right resider _id or phone no. which is verified"))
                             }
                         }).catch(err=>{
+                            console.log("Error caught !bug inside residerController.js->checkIn()->line 354");
                             return next(new Error(err))
                         });
                     }
@@ -363,7 +365,7 @@ async function checkIn(req,res,next){
         })
 
     } catch (error) {
-        console.log(error);
+        console.log("Error caught !bug inside residerController.js->checkIn()->line 371 : ", error);
         return next(new Error(result.error.details[0].message))
     }
 }
@@ -441,7 +443,7 @@ async function checkOut(req,res,next) {
                                             Advance : -${doc.advance ? doc.advance : 0 }. <br>
                                             remaining amount = ${doc.advance ? (JSON.parse(amount)+totalExpenses)-doc.advance : JSON.parse(amount)+totalExpenses}. <br>
                                             Please don’t hesitate to contact us on {9999999999} for any concern.`;
-                                const to = [resider.residers[0].email.emailID];
+                                const to = [resider.email.emailID];
                                 sendCheckOutEmail(sub,body,to);
                                 // sendSMS(resider.name,amount+totalExpenses,resider.phone);
                                 // const transactionData = {

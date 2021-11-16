@@ -60,11 +60,12 @@ async function sendEmail(subject,body,to) {
         },
         subject,
         html:`${body}`,
+        isMultiple: true,
     }
     // console.log(msg);
         SgMail.send(msg)
             // .then((ee)=>res.send({succes : "Email verification link has been sent to your registered email"}))
-            .catch((err)=>console.log(err))
+            .catch((err)=>console.log("This error located in notification.js->sendEmail() ............error for : ",msg,err))
 }
 
 async function sendCheckOutEmail(subject,body,to) {
@@ -76,11 +77,12 @@ async function sendCheckOutEmail(subject,body,to) {
         },
         subject,
         html:`${body}`,
+        isMultiple: true,
     }
-    console.log(msg);
+    // console.log(msg);
         SgMail.send(msg)
             // .then((ee)=>res.send({succes : "Email verification link has been sent to your registered email"}))
-            .catch((err)=>console.log(err))
+            .catch((err)=>console.log("This error located in notification.js->sendCheckOutEmail() ............error for : ",msg,err))
 }
 
 module.exports = { sendEmail,sendCheckOutEmail}

@@ -145,7 +145,7 @@ async function userLogin(req,res,next) {
         }
     }else{
         res.status(403);
-        return next(new Error ("Phone numbwe is not registered"));
+        return next(new Error ("Phone number is not registered"));
     }
     })
 }
