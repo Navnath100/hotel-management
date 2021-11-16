@@ -332,17 +332,17 @@ async function checkIn(req,res,next){
                         }
                         Resider.findOneAndUpdate({_id:residerData._id}, {$set:update}, {new: true}, (err, doc)=>{
                             if(doc){
-                                res.json(doc);
-                                const sub = `${resider.name}_ has checked out`;
+                                const sub = `${resider.name}_ has checked in`;
                                 const body = `<h1>Checked In Successfully</h1>
-                                            <p>Dear customer, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
-                                            Your Check In is confirmed and your per day cost will be Rs.${doc.amountPerDay}. 
-                                            Please don’t hesitate to contact us on {9999999999} for any concern.`;
+                                <p>Dear customer, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
+                                Your Check In is confirmed and your per day cost will be Rs.${doc.amountPerDay}. 
+                                Please don’t hesitate to contact us on {9999999999} for any concern.`;
                                 const to = [doc.email.emailID];
                                 for (let i = 0; i < doc.residers.length; i++) {
                                     to.push(doc.residers[i].email.emailID);
                                 }
                                 sendEmail(sub,body,to);
+                                res.json(doc);
                             } else if(err){
                                 res.json(err);
                                 console.log(err);
@@ -507,6 +507,22 @@ async function addExpense(req,res,next) {
                     if(resider && resider.status == "checked-in"){
                         Resider.findOneAndUpdate({$and: [{ _id },{status:"checked-in"} ] }, {$push:{expenses:{item,charges,addedBy:req.params.id}}}, {new: false}, (err, doc)=>{
                             if(doc){
+                                const transactionData = {
+                                    amount : charges,
+                                    item: item,
+                                    by : req.params.id,
+                                    type : "debit", // debit/credit
+                                    description : "Guest Expense",
+                                    transactionFor : "guest-expense", // check-out/check-in/check-in-advance/staff-expense/withdrawel/guest-expense etc.
+                                }
+                        
+                                addTransaction(transactionData).then(transactionResult=>{
+                                    if(transactionResult){
+                                        return next(new Error(transactionResult))
+                                        console.log(transactionResult);
+                                    }else
+                                        res.json({Success:"Added Successfully"});
+                                });
                                 res.json(doc);
                             } else if(err){
                                 res.json(err);
@@ -515,7 +531,7 @@ async function addExpense(req,res,next) {
                             }
                         });
                     }else
-                        return next(new Error("Cusromer Not checked in using "+phone));
+                        return next(new Error("Oops!!Guest not found"));
                 }).catch(err=>{
                     return next(new Error(err))
                 });
@@ -818,8 +834,7 @@ async function checkedInResiders(req,res,next) {
                     if (req.query.page && req.query.limit) {
                         page = JSON.parse(req.query.page);
                         limit = JSON.parse(req.query.limit);
-                    }
-                    else{
+                    }else{
                         page = 1;
                         limit = result.total;
                     }
