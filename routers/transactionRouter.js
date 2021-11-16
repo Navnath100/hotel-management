@@ -1,5 +1,5 @@
 const express = require('express')
-const { getTransactions, addStaffExpense,withdrawal } = require('../controller/transactionController')
+const { getTransactions, addStaffExpense,withdrawal,todayBusiness } = require('../controller/transactionController')
 
 const transactionRouter = express.Router()
 
@@ -7,5 +7,6 @@ const transactionRouter = express.Router()
 transactionRouter.get('/:id' , getTransactions)
 transactionRouter.post('/staff-expense/:id' , addStaffExpense)
 transactionRouter.post('/withdrawel/:id' , withdrawal)
+transactionRouter.get('/today-business/:id' , todayBusiness)
 
 module.exports = { transactionRouter }

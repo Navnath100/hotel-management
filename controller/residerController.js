@@ -436,7 +436,10 @@ async function checkOut(req,res,next) {
                                 const sub = `Guest in room no.${resider.roomNo}_ has checked out`;
                                 const body = `<h1>Checked Out Successfully</h1>
                                             <p>Dear ${"Guest"}, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
-                                            Your checkout is confirmed and your total payment amount is Rs.${doc.advance ? (JSON.parse(amount)+totalExpenses)-doc.advance : JSON.parse(amount)+totalExpenses}. 
+                                            Your checkout is confirmed.<br>
+                                            Total Bill amount : ${JSON.parse(amount)+totalExpenses} . <br>
+                                            Advance : -${doc.advance ? doc.advance : 0 }. <br>
+                                            remaining amount = ${doc.advance ? (JSON.parse(amount)+totalExpenses)-doc.advance : JSON.parse(amount)+totalExpenses}. <br>
                                             Please don’t hesitate to contact us on {9999999999} for any concern.`;
                                 const to = [resider.residers[0].email.emailID];
                                 sendCheckOutEmail(sub,body,to);
@@ -536,52 +539,6 @@ async function addExpense(req,res,next) {
                     return next(new Error(err))
                 });
             } 
-            else
-                return next(new Error("Unauthorized access denied"))
-        }).catch(err=>{
-            return next(new Error(err))
-        })
-    
-    } catch (error) {
-        console.log(error);
-        return next(new Error(error))
-    }
-}
-//api/resider//today-business/:id
-async function todayBusiness(req,res,next) {
-    try {
-            User.findOne({_id : req.params.id}).then(user =>{
-            if(user && user.status == "Active"){
-                const now = new Date();
-                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                const client = {}
-
-                Resider.find({createdAt: {$gte: today},updatedAt: {$gte: today}}).then(today_business=>{
-                    if(today_business.length > 0){
-                        let totalAmount = 0;
-                        for (let i = 0; i < today_business.length; i++) {
-                            if(today_business[i].bill != null)
-                                 totalAmount += today_business[i].bill.Net_Payment_amount                       
-                        }
-                        client["todayBusiness"] = totalAmount;
-                        client["todayCustomersCount"] = today_business.length;
-                        // client["todayCustomers"] = today_business;
-                        
-                        // res.json(client);
-                        Transaction.find({createdAt: {$gte: today},transactionType:"staff-expense"}).then(today_expenses=>{
-                            if(today_expenses.length >= 0){
-                                let todayExpenses = 0;
-                                for (let i = 0; i < today_expenses.length; i++)
-                                    todayExpenses -= today_expenses[i].charges                      
-                                client["todayStaffExpenses"] = todayExpenses;
-                            }
-                            res.json(client);
-                        });
-
-                    }else
-                        res.json({error:"Entries not found for today."})   
-                });
-            }
             else
                 return next(new Error("Unauthorized access denied"))
         }).catch(err=>{
@@ -871,4 +828,4 @@ async function checkedInResiders(req,res,next) {
 }
 
 
-module.exports = { getResiders,addResider,checkIn,checkOut,uploadImg,addExpense,todayBusiness,sendOtp,verifyOtp,checkedInResiders }
+module.exports = { getResiders,addResider,checkIn,checkOut,uploadImg,addExpense,sendOtp,verifyOtp,checkedInResiders }

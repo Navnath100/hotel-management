@@ -277,5 +277,45 @@ async function withdrawal(req,res,next) {
         return next(new Error(error))
     }
 }
+//api/resider//today-business/:id
+async function todayBusiness(req,res,next) {
+    try {
+            User.findOne({_id : req.params.id}).then(user =>{
+            if(user && user.status == "Active"){
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const client = {}
+
+                Transaction.find({createdAt: {$gte: today}}).then(today_business=>{
+                    if(today_business.length > 0){
+                        let totalAmount = 0;
+                        for (let i = 0; i < today_business.length; i++) {
+                            if(today_business[i].type == "credit")
+                                 totalAmount += today_business[i].amount                       
+                            else if(today_business[i].type == "debit")
+                                 totalAmount -= today_business[i].amount
+                            else
+                                console.log("Something went wrong!It should not be executed. bug in residerController.js -> todayExpenses()");                                       
+                        }
+                        client["todayBusiness"] = totalAmount;
+                        client["todayCustomersCount"] = today_business.length;
+                        // client["todayCustomers"] = today_business;
+                        
+                        // res.json(client);
+                        res.json(client);
+                    }else
+                        res.json({error:"Entries not found for today."})   
+                });
+            }else
+                return next(new Error("Unauthorized access denied"))
+        }).catch(err=>{
+            return next(new Error(err))
+        })
     
-module.exports = { addFirstTransaction,addTransaction, getTransactions, addStaffExpense, addStaffExpense, withdrawal }
+    } catch (error) {
+        console.log(error);
+        return next(new Error(error))
+    }
+}
+    
+module.exports = { addFirstTransaction,addTransaction, getTransactions, addStaffExpense, addStaffExpense, withdrawal,todayBusiness }
