@@ -299,7 +299,7 @@ async function todayBusiness(req,res,next) {
                         }
                         client["todayBusiness"] = totalAmount;
                         client["todayCustomersCount"] = today_business.length;
-                        // client["todayCustomers"] = today_business;
+                        client["todayTransaction"] = today_business;
                         
                         // res.json(client);
                         res.json(client);
