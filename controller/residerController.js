@@ -332,7 +332,7 @@ async function checkIn(req,res,next){
                         }
                         Resider.findOneAndUpdate({_id:residerData._id}, {$set:update}, {new: true}, (err, doc)=>{
                             if(doc){
-                                const sub = `${resider.name}_ has checked in`;
+                                const sub = `Checked in room no.${doc.roomNo}`;
                                 const body = `<h1>Checked In Successfully</h1>
                                 <p>Dear customer, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
                                 Your Check In is confirmed and your per day cost will be Rs.${doc.amountPerDay}. 
