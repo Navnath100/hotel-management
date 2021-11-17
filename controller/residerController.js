@@ -839,5 +839,4 @@ async function getImage(req,res,next) {
         return next(new Error(error))
     }
 }
-
 module.exports = { getResiders,addResider,checkIn,checkOut,uploadImg,addExpense,sendOtp,verifyOtp,checkedInResiders,getImage }
