@@ -619,7 +619,7 @@ async function verifyOtp(req,res,next) {
             if(user && user.status == "Active"){
                 Resider.findOne({ _id }).then(resider =>{
                     if (resider.phone.otp == otp && new Date(resider.phone.expiry).getTime() > new Date().getTime()) {
-                        Resider.findOneAndUpdate({ _id  }, {$set:{"phone.otp" : null,"phone.expiry" : null,"phone.isVerified":true}}, {new: true}, (err, doc)=>{
+                        Resider.findOneAndUpdate({ _id  }, {$set:{"phone.otp" : null,"phone.expiry" : null,"phone.isVerified":false,"email.isVerified":true}}, {new: true}, (err, doc)=>{
                             if(doc){
                                 res.json({success:"OTP verified Successfully"});
                             } else if(err){
