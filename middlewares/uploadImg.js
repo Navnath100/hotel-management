@@ -19,4 +19,17 @@ const storage = multer.memoryStorage({
 
 const upload = multer({storage}).single('image')
 
-module.exports = { upload,s3 }
+// downloads a file from s3
+function getFileStream(fileKey) {
+    try {
+        const downloadParams = {
+            Key: fileKey,
+            Bucket: "sadguru-lodge"
+        }
+        return s3.getObject(downloadParams).createReadStream()
+    } catch (error) {
+        return next(new Error(error))
+    }
+  }
+
+module.exports = { upload,s3,getFileStream }

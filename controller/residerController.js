@@ -8,7 +8,7 @@ const { sendEmail,sendCheckOutEmail } = require('../middlewares/notification');
 const { addTransaction } = require('../controller/transactionController');
 const AWS = require('aws-sdk')
 const uuid = require('uuid/v4')
-const { upload,s3 } = require('../middlewares/uploadImg')
+const { upload,s3,getFileStream } = require('../middlewares/uploadImg')
 const sendSMS = require('../middlewares/sms')
 
 // let residerCount = null;
@@ -828,6 +828,16 @@ async function checkedInResiders(req,res,next) {
         return next(new Error(error));
     }
 }
+// api/residers/get-image
+async function getImage(req,res,next) {
+    try {
+        const key = req.params.key
+        const readStream = getFileStream(key)
 
+        readStream.pipe(res)
+    } catch (error) {
+        return next(new Error(error))
+    }
+}
 
-module.exports = { getResiders,addResider,checkIn,checkOut,uploadImg,addExpense,sendOtp,verifyOtp,checkedInResiders }
+module.exports = { getResiders,addResider,checkIn,checkOut,uploadImg,addExpense,sendOtp,verifyOtp,checkedInResiders,getImage }

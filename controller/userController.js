@@ -141,7 +141,7 @@ async function userLogin(req,res,next) {
         }
         }else{
             res.status(401);
-            return next(new Error ("Authentication Failed! Wrong Email Or Password"));
+            return next(new Error ("Authentication Failed!"));
         }
     }else{
         res.status(403);
