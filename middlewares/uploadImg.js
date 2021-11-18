@@ -30,7 +30,8 @@ function getFileStream(fileKey) {
     
       return s3.getObject(downloadParams).createReadStream()
     } catch (error) {
-      return next(new Error("Error Caught in uploadImg.js -> getFileStream()"))
+      console.log("Error Caught in uploadImg.js -> getFileStream()",error);
+      // return next(new Error("Error Caught in uploadImg.js -> getFileStream()"))
     }
   }
 

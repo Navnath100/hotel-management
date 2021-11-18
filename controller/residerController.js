@@ -833,10 +833,11 @@ async function getImage(req,res,next) {
     try {
         const key = req.params.key
         const readStream = getFileStream(key)
-
-        readStream.pipe(res)
+        console.log("readStream : ",readStream);
+        readStream.pipe(res);
     } catch (error) {
-        return next(new Error("Error Caught in residerController.js -> getImage()"))
+        console.log("Error Caught in residerController.js -> getImage()",error);
+        // return next(new Error("Error Caught in residerController.js -> getImage()"))
     }
 }
 module.exports = { getResiders,addResider,checkIn,checkOut,uploadImg,addExpense,sendOtp,verifyOtp,checkedInResiders,getImage }
