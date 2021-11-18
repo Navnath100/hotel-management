@@ -249,30 +249,34 @@ async function withdrawal(req,res,next) {
             return new Error(result.error.details[0].message)
         }
 
-        
-        const transactionData = {
-            amount : result.value.amount,
-            by : req.params.id,
-            type : "debit", // debit/credit
-            description : "Withdrew",
-            transactionFor : "Withdrew", // check-out/check-in/check-in-advance/staff-expense/Withdrew etc.
-        }
-        Transaction.find().sort({_id:-1}).limit(1).then(balance => {
-            if (balance[0].availableBalance < transactionData.amount) {
-                return next(new Error("Transaction could not be done due to low balance"))
-            }else{
-                // console.log(transactionData);
-                addTransaction(transactionData).then(transactionResult=>{
-                    if(transactionResult){
-                        return next(new Error(transactionResult))
+        User.findOne({_id:ObjectId(id)}).then(user=>{
+            if(user && user.status=="Active"){
+                const transactionData = {
+                    amount : result.value.amount,
+                    by : req.params.id,
+                    type : "debit", // debit/credit
+                    description : `Withdrew by ${user.name}`,
+                    transactionFor : "Withdrew", // check-out/check-in/check-in-advance/staff-expense/Withdrew etc.
+                }
+                Transaction.find().sort({_id:-1}).limit(1).then(balance => {
+                    if (balance[0].availableBalance < transactionData.amount) {
+                        return next(new Error("Transaction could not be done due to low balance"))
                     }else{
-                        res.json({Success:"Transaction Successful"});
+                        // console.log(transactionData);
+                        addTransaction(transactionData).then(transactionResult=>{
+                            if(transactionResult){
+                                return next(new Error(transactionResult))
+                            }else{
+                                res.json({Success:"Transaction Successful"});
+                            }
+                        });
                     }
-                });
-            }
-        }).catch(err=>{
-            return new Error(err);
-        })
+                }).catch(err=>{
+                    return new Error(err);
+                })
+            }else
+                return next(new Error("Unauthorized access denied"))
+        });
     } catch (error) {
         return next(new Error(error))
     }

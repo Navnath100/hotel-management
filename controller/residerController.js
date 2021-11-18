@@ -145,7 +145,9 @@ async function getResiders(req,res,next) {
         }
 
         const result = {}
-        // result.totalItems = await Resider.find({$and: [{ "factory.factoryID": factoryID },search ]}).countDocuments();
+        Resider.find(search).countDocuments().then(count => {result["total"] = count});
+        Resider.find({$and: [search,{isAC:true},{$or: [{ "status":"checked-in" },{ "status":"checked-out" } ]} ]}).countDocuments().then(count => {result["AC"] = count});
+        Resider.find({$and: [search,{isAC:false},{$or: [{ "status":"checked-in" },{ "status":"checked-out" } ]} ]}).countDocuments().then(count => {result["nonAC"] = count});
         let page;
         let limit;
         if (req.query.page && req.query.limit) {
@@ -158,7 +160,7 @@ async function getResiders(req,res,next) {
         }
         const startIndex = (page - 1) * limit
         const endIndex = page * limit
-        if (endIndex < await Resider.find(search).countDocuments().exec()) {
+        if (endIndex < result.total) {
             result.next = {
                 page: page + 1,
                 limit: limit
