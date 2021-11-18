@@ -249,7 +249,7 @@ async function withdrawal(req,res,next) {
             return new Error(result.error.details[0].message)
         }
 
-        User.findOne({_id:ObjectId(id)}).then(user=>{
+        User.findOne({_id:req.params.id}).then(user=>{
             if(user && user.status=="Active"){
                 const transactionData = {
                     amount : result.value.amount,
