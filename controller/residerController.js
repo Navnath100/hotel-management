@@ -836,7 +836,7 @@ async function getImage(req,res,next) {
 
         readStream.pipe(res)
     } catch (error) {
-        return next(new Error(error))
+        return next(new Error("Error Caught in residerController.js -> getImage()"))
     }
 }
 module.exports = { getResiders,addResider,checkIn,checkOut,uploadImg,addExpense,sendOtp,verifyOtp,checkedInResiders,getImage }

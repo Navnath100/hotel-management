@@ -22,12 +22,16 @@ const upload = multer({storage}).single('image')
 
 // downloads a file from s3
 function getFileStream(fileKey) {
-    const downloadParams = {
-      Key: fileKey,
-      Bucket: "sadguru-lodge"
+    try {
+      const downloadParams = {
+        Key: fileKey,
+        Bucket: "sadguru-lodge"
+      }
+    
+      return s3.getObject(downloadParams).createReadStream()
+    } catch (error) {
+      return next(new Error("Error Caught in uploadImg.js -> getFileStream()"))
     }
-  
-    return s3.getObject(downloadParams).createReadStream()
   }
 
 module.exports = { upload,s3,getFileStream }
