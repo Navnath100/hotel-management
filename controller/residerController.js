@@ -277,27 +277,18 @@ try {
 async function checkIn(req,res,next){
     try {
         let schema = joi.object({
-            // roomNo:joi.string().pattern(/^[0-9]+$/).required(),
-            // isAC:joi.boolean().required(),
-            // amountPerDay:joi.string().pattern(/^[0-9]+$/).required(),
-            // phone:joi.object({
-            //     number:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required(),
-            //     isVerified:joi.boolean(),
-            //     otp:joi.string().pattern(/^[0-9]+$/),
-            //     expiry:joi.date()
-            // }).required(),
             _id:joi.string().required(),
             phone:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required(),
             residers:joi.array().items(joi.object({
                 name:joi.string().min(1).max(60).required(),
-                email:joi.object({emailID:joi.string().required(),status:joi.string(),resetToken:joi.string(),expireToken:joi.date()}).required(),
-                phone:joi.object({
-                    number:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required(),
-                    otp:joi.string().pattern(/^[0-9]+$/),
-                    expiry:joi.date()
-                }).required(),
-                idProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required(),
-                addressProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required()
+                email:joi.object({emailID:joi.string()}),
+                // phone:joi.object({
+                //     number:joi.string().min(10).max(10).pattern(/^[0-9]+$/).required(),
+                //     otp:joi.string().pattern(/^[0-9]+$/),
+                //     expiry:joi.date()
+                // }).required(),
+                idProof:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required(),
+                // addressProof:joi.object({type:joi.string().required(),img:joi.object({Bucket:joi.string().required(),Key:joi.string().required()}).required()}).required()
             }).required()).min(1).required(),
             // checkIn:joi.object({by:joi.string().required(),time:joi.date()}).required() 
         })
@@ -312,8 +303,8 @@ async function checkIn(req,res,next){
             if(user && user.status == "Active"){
                 const checkIn={by:req.params.id,time:new Date()}
                 Resider.findOne({$and: [{_id:residerData._id} ] }).then(resider1 =>{
-                    if(!resider1.phone.isVerified){
-                        return next(new Error("Could not process for check in due to unverified phone no."))
+                    if(!resider1.phone.isVerified && !resider.email.emailID){
+                        return next(new Error("Could not process for check in due to unverified phone no and emailID"))
                     }else if (resider1.status == "checked-in") {
                         return next(new Error("Already checked in"));
                     }else{
