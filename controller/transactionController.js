@@ -2,6 +2,7 @@ const joi=require('joi')
 const { User } = require('../models/users')
 const { Transaction } = require('../models/transactions')
 const { sendEmail } = require('../middlewares/notification');
+const hashPassword = require('password-hash');
 
 // /api/resider/
 async function getTransactions(req,res,next) {
@@ -241,18 +242,32 @@ async function  addStaffExpense(req,res,next) {
 async function withdrawal(req,res,next) {
     try {
         let schema = joi.object({
-            amount:joi.number().required(),
+            phone:joi.string().length(10).pattern(/^[0-9]+$/).required(),
+            password:joi.string().required(),
+            amount:joi.number().required()
         })
         let result = schema.validate(req.body)
     
         if(result.error){
-            return new Error(result.error.details[0].message)
+            return next(new Error(result.error.details[0].message))
         }
-
-        User.findOne({_id:req.params.id}).then(user=>{
+        const {phone , password , amount} = result.value;
+        User.findOne({_id:req.params.id,phone}).then(user=>{
+            console.log(user);
+            if(user && user.status == "Disabled"){
+                res.status(422);
+                return next(new Error("Your account is disabled"));
+            }
             if(user && user.status=="Active"){
+                //password verification
+                const isPasswordMatched = hashPassword.verify(password,user.password)
+                if(!isPasswordMatched){
+                    res.status(401);
+                    return next(new Error ("Authentication Failed!"));
+                }
+                
                 const transactionData = {
-                    amount : result.value.amount,
+                    amount : amount,
                     by : req.params.id,
                     type : "debit", // debit/credit
                     description : `Withdrew by ${user.name}`,
@@ -275,7 +290,7 @@ async function withdrawal(req,res,next) {
                     return new Error(err);
                 })
             }else
-                return next(new Error("Unauthorized access denied"))
+                return next(new Error("Something went wrong...!"))
         });
     } catch (error) {
         return next(new Error(error))
@@ -294,13 +309,11 @@ async function todayBusiness(req,res,next) {
                     if(today_business.length > 0){
                         let totalAmount = 0;
                         for (let i = 0; i < today_business.length; i++) {
-                            if(today_business[i].type == "credit")
+                            if(today_business[i].type == "credit" && today_business[i].transactionFor != "Withdrew")
                                  totalAmount += today_business[i].amount                       
-                            else if(today_business[i].type == "debit")
+                            else if(today_business[i].type == "debit" && today_business[i].transactionFor != "Withdrew")
                                  totalAmount -= today_business[i].amount
-                            else
-                                console.log("Something went wrong!It should not be executed. bug in residerController.js -> todayExpenses()");                                       
-                        }
+                            }
                         client["todayBusiness"] = totalAmount;
                         client["todayCustomersCount"] = today_business.length;
                         client["todayTransaction"] = today_business;
