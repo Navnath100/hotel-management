@@ -303,7 +303,7 @@ async function checkIn(req,res,next){
             if(user && user.status == "Active"){
                 const checkIn={by:req.params.id,time:new Date()}
                 Resider.findOne({$and: [{_id:residerData._id} ] }).then(resider1 =>{
-                    if(!resider1.phone.isVerified && !resider.email.emailID){
+                    if(!resider1.phone.isVerified && !resider1.email.emailID){
                         return next(new Error("Could not process for check in due to unverified phone no and emailID"))
                     }else if (resider1.status == "checked-in") {
                         return next(new Error("Already checked in"));
