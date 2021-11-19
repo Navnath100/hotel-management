@@ -315,8 +315,6 @@ async function todayBusiness(req,res,next) {
                                  totalAmount -= today_business[i].amount
                             }
                         client["todayBusiness"] = totalAmount;
-                        client["todayCustomersCount"] = today_business.length;
-                        client["todayTransaction"] = today_business;
                         
                         // res.json(client);
                         res.json(client);

@@ -145,9 +145,9 @@ async function getResiders(req,res,next) {
         }
 
         const result = {}
-        Resider.find(search).countDocuments().then(count => {result["total"] = count});
-        Resider.find({$and: [search,{isAC:true},{$or: [{ "status":"checked-in" },{ "status":"checked-out" } ]} ]}).countDocuments().then(count => {result["AC"] = count});
-        Resider.find({$and: [search,{isAC:false},{$or: [{ "status":"checked-in" },{ "status":"checked-out" } ]} ]}).countDocuments().then(count => {result["nonAC"] = count});
+        result["total"] = await Resider.find(search).countDocuments();
+        result["AC"] = await Resider.find({$and: [search,{isAC:true},{$or: [{ "status":"checked-in" },{ "status":"checked-out" } ]} ]}).countDocuments();
+        result["nonAC"] = await Resider.find({$and: [search,{isAC:false},{$or: [{ "status":"checked-in" },{ "status":"checked-out" } ]} ]}).countDocuments();
         let page;
         let limit;
         if (req.query.page && req.query.limit) {
