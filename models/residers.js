@@ -18,9 +18,9 @@ const residerSchema = new Schema({
         {   
             name : {type : String , required:false},
             email : {status: {type :String, default:'Pending'}, emailID:{type : String,required:false},resetToken : {type : String,required:false},expireToken : {type : Date,required:false}},
-            phone : {number : {type:String,required:true} , isVerified:{type:Boolean,required:false,default:false} , otp:{type:Number,required:false} , expiry:{type:Date,required:false}},
-            idProof : {type: {type :String,required:false}, img:{Bucket:{type:String , required:false},Key:{type:String , required:false}}},
-            addressProof : {type: {type :String,required:false}, img:{Bucket:{type:String , required:false},Key:{type:String , required:false}}}
+            // phone : {number : {type:String,required:true} , isVerified:{type:Boolean,required:false,default:false} , otp:{type:Number,required:false} , expiry:{type:Date,required:false}},
+            idProof : {Bucket:{type:String , required:false},Key:{type:String , required:false}},
+            // addressProof : {type: {type :String,required:false}, img:{Bucket:{type:String , required:false},Key:{type:String , required:false}}}
         }],
     checkIn : {by: {type :String,required:false}, time:{type : Date ,required:false}},
     checkOut : {by: {type :String,required:false}, time:{type : Date,required:false}},
