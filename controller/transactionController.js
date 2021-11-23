@@ -394,27 +394,47 @@ async function todayBusiness(req,res,next) {
                 $lt: new Date(lastDayOfYear).setHours(23, 59, 59)
             }
         }
-        client["AC_nonAC"] = await Resider.aggregate([ 
+        Resider.aggregate([ 
             {$match: {$and:[
                 {$nor: [ { status: "Pending" } ]},
                 {$or: [ 
-                    // search, // uncomment this to get dynamic result according to date_filter
+                    search, // uncomment this to get dynamic result according to date_filter
                     
                     {updatedAt : {$gte: new Date(new Date().setHours(00, 00, 00)),$lt: new Date(new Date().setHours(23, 59, 59))}}
                     ]}
                 ]}},
             {$group: { 
                 "_id": '$isAC',
-                // "_id": { "$first": "$isAC" },  //$first accumulator
                 Advance:{$sum:'$advance'},
                 StayAmount:{$sum:'$bill.StayCharges'},
                 count: { $sum: 1 }
              }} 
-            ])
-            if (client.AC_nonAC == 0) 
-                res.json({error:"Entries not found for today."});
-            else
-                res.json(client);
+            ]).then(result => {
+                // console.log(result);
+                // if (result.length == 0) 
+                //     res.json({error:"Entries not found for today."});
+                // else if(result.length == 1){
+                //     if (result[0]._id == true) {
+                //         client["AC"] = result[0];
+                //     }else 
+                //         client["nonAC"] = result[0];
+                // }
+                // else if(result.length == 2){
+                //     if (result[0]._id == true) {
+                //         client["AC"] = result[0];
+                //     }else{
+                //         client["nonAC"] = result[0];
+                //     }
+                //     if (result[1]._id == false) {
+                //         client["nonAC"] = result[1];
+                //     }else{
+                //         client["AC"] = result[1];
+                //     }
+
+                // }
+                res.json(result);
+                    
+            })
             
         }else
                 return next(new Error("Unauthorized access denied"))
