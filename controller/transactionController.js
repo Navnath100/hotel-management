@@ -431,7 +431,7 @@ async function todayBusiness(req,res,next) {
                     }
 
                 }
-                res.json(result);
+                res.json(client);
                     
             })
             
