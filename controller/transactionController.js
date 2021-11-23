@@ -410,28 +410,27 @@ async function todayBusiness(req,res,next) {
                 count: { $sum: 1 }
              }} 
             ]).then(result => {
-                // console.log(result);
-                // if (result.length == 0) 
-                //     res.json({error:"Entries not found for today."});
-                // else if(result.length == 1){
-                //     if (result[0]._id == true) {
-                //         client["AC"] = result[0];
-                //     }else 
-                //         client["nonAC"] = result[0];
-                // }
-                // else if(result.length == 2){
-                //     if (result[0]._id == true) {
-                //         client["AC"] = result[0];
-                //     }else{
-                //         client["nonAC"] = result[0];
-                //     }
-                //     if (result[1]._id == false) {
-                //         client["nonAC"] = result[1];
-                //     }else{
-                //         client["AC"] = result[1];
-                //     }
+                if (result.length == 0) 
+                    res.json({error:"Entries not found for today."});
+                else if(result.length == 1){
+                    if (result[0]._id == true) {
+                        client["AC"] = result[0];
+                    }else 
+                        client["nonAC"] = result[0];
+                }
+                else if(result.length == 2){
+                    if (result[0]._id == true) {
+                        client["AC"] = result[0];
+                    }else{
+                        client["nonAC"] = result[0];
+                    }
+                    if (result[1]._id == false) {
+                        client["nonAC"] = result[1];
+                    }else{
+                        client["AC"] = result[1];
+                    }
 
-                // }
+                }
                 res.json(result);
                     
             })
