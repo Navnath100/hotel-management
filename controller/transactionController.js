@@ -398,7 +398,7 @@ async function todayBusiness(req,res,next) {
             {$match: {$and:[
                 {$nor: [ { status: "Pending" } ]},
                 {$or: [ 
-                    search, // uncomment this to get dynamic result according to date_filter
+                    // search, // uncomment this to get dynamic result according to date_filter
                     
                     {updatedAt : {$gte: new Date(new Date().setHours(00, 00, 00)),$lt: new Date(new Date().setHours(23, 59, 59))}}
                     ]}
@@ -411,7 +411,10 @@ async function todayBusiness(req,res,next) {
                 count: { $sum: 1 }
              }} 
             ])
-            res.json(client);
+            if (client.AC_nonAC == 0) 
+                res.json({error:"Entries not found for today."});
+            else
+                res.json(client);
             
         }else
                 return next(new Error("Unauthorized access denied"))
