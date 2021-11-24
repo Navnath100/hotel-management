@@ -410,7 +410,7 @@ async function todayBusiness(req,res,next) {
                 count: { $sum: 1 }
              }} 
             ]).then(result => {
-                console.log(result);
+                // console.log(result);
                 if (result.length == 0) 
                     res.json({error:"Entries not found for today."});
                 else if(result.length == 1){
@@ -474,8 +474,27 @@ async function todayBusiness(req,res,next) {
                             }
                         }
                         client["TodayBusiness"] = credit - debit;
-                        res.json(client);
                     })
+
+                    Transaction.aggregate([ 
+                        {$match: {$and:[
+                            {transactionFor:"staff-expense"},
+                            {$or: [
+                                    // search, // uncomment this to get dynamic result according to date_filter
+                                    {createdAt : {$gte: new Date(new Date().setHours(00, 00, 00)),$lt: new Date(new Date().setHours(23, 59, 59))}}
+                                ]}
+                            ]}},
+                        {
+                            $group: { 
+                            "_id": '$transactionFor',
+                            Total:{$sum:'$amount'},
+                            count: { $sum: 1 }
+                         }} 
+                        ]).then(staffExpenses=>{
+                            client["staffExpenses"] = staffExpenses[0].Total;
+                            client["staffExpensesCount"] = staffExpenses[0].count;
+                            res.json(client);
+                        })
                     
             })
             
