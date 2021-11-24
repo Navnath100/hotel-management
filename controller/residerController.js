@@ -415,6 +415,7 @@ async function checkOut(req,res,next) {
                             daysStayed +=1;
                         }
                         amount = daysStayed * perDaycost;
+                        console.log(new Date().getHours());
                         console.log(daysStayed);
                         console.log(amount);
                     }
