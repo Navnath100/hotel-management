@@ -402,6 +402,7 @@ async function checkOut(req,res,next) {
                         stayed = stay_hours/(1000*60*60);
                         amount = perDaycost
                     }else {
+                        console.log("inside else");
                         const check_in_time = new Date(resider.checkIn.time).getTime();
                         const first_day_stay = new Date(resider.checkIn.time).setHours(23, 59, 59) - new Date(resider.checkIn.time).getTime();
                         const last_day_stay =  new Date().getTime() - new Date().setHours(00, 00, 00);
@@ -410,10 +411,12 @@ async function checkOut(req,res,next) {
                         const mid_time = steying_time-(first_day_stay+last_day_stay);
                         let daysStayed = Math.round(mid_time/(1000*60*60*24)) + 1;  // +1 for first day
                         if (new Date().getHours() > 11) {
-                            stayed = `${daysStayed} and ${last_day_stay/(1000*60*60)} hours`;
+                            stayed = `${daysStayed} days and ${Math.round(last_day_stay/(1000*60*60))} hours`;
                             daysStayed +=1;
                         }
                         amount = daysStayed * perDaycost;
+                        console.log(daysStayed);
+                        console.log(amount);
                     }
                         const Bill = {};
                         Bill.Stayed = stayed;
