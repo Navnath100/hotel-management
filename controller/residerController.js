@@ -409,7 +409,7 @@ async function checkOut(req,res,next) {
                         const steying_time = check_out_time - check_in_time;
                         const mid_time = steying_time-(first_day_stay+last_day_stay);
                         let daysStayed = Math.round(mid_time/(1000*60*60*24)) + 1;  // +1 for first day
-                        if (Math.round(last_day_stay/(1000*60*60)) > 11) {
+                        if (new Date().getHours() > 11) {
                             stayed = `${daysStayed} and ${last_day_stay/(1000*60*60)} hours`;
                             daysStayed +=1;
                         }
