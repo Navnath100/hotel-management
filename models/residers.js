@@ -4,7 +4,7 @@ const Schema = mongoose.Schema
 
 const residerSchema = new Schema({
     roomNo : {type : String , required:true},
-    amountPerDay : {type : String , required:true},
+    amountPerDay : {type : Number , required:true},
     isAC : {type : Boolean , required:true},
     // SrNo : {type : String , required:true},
     advance : {type : Number , required:false},
