@@ -378,8 +378,8 @@ async function checkOut(req,res,next) {
     const {residerID,phone} = result.value;
     User.findOne({_id : req.params.id}).then(user =>{
         if(user && user.status == "Active"){
-            Resider.findOne({$and: [{ _id:residerID },{status:"checked-in"} ] }).then( (resider)=>{
-                if(resider){
+            Resider.findOne({$and: [{ _id:residerID }] }).then( (resider)=>{
+                if(resider && resider.status == "checked-in"){
                     const perDaycost = resider.amountPerDay;
                     let amount = 0;
                     let stayed;
@@ -410,14 +410,12 @@ async function checkOut(req,res,next) {
                         const steying_time = check_out_time - check_in_time;
                         const mid_time = steying_time-(first_day_stay+last_day_stay);
                         let daysStayed = Math.round(mid_time/(1000*60*60*24)) + 1;  // +1 for first day
-                        if (new Date().getHours() > 11) {
+                        const last_day_hours = new Date(new Date().setHours(new Date().getUTCHours()+5, new Date().getUTCMinutes()+30, 00)).getHours()
+                        if (last_day_hours > 11) {
                             stayed = `${daysStayed} days and ${Math.round(last_day_stay/(1000*60*60))} hours`;
                             daysStayed +=1;
                         }
                         amount = daysStayed * perDaycost;
-                        console.log(new Date().getHours());
-                        console.log(daysStayed);
-                        console.log(amount);
                     }
                         const Bill = {};
                         Bill.Stayed = stayed;
@@ -476,9 +474,10 @@ async function checkOut(req,res,next) {
                         // res.json(Bill);
                 
                 }
-                // else if(resider == null){
-                //     return next(new Error("Enter valid phone no."));
-                // }
+                else if(resider && resider.status == "checked-out")
+                    return next(new Error("Guest Already Checked Out"));
+                else
+                    return next(new Error("Something went wrong"));
             });
         } 
         else
