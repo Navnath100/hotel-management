@@ -414,59 +414,67 @@ async function todayBusiness(req,res,next) {
                     res.json({error:"Entries not found for today."});
                 else if(result.length == 1){
                     if (result[0]._id == true) {
-                        client["AC"] = result[0];
+                        client["ACRooms"] = result[0].count;
+                        client["ACRoomsAmount"] = result[0].StayAmount;
                     }else 
-                        client["nonAC"] = result[0];
+                        client["nonACRooms"] = result[0].count;
+                        client["nonACRoomsAmount"] = result[0].StayAmount;
                 }
                 else if(result.length == 2){
                     if (result[0]._id == true) {
-                        client["AC"] = result[0];
+                        client["ACRooms"] = result[0].count;
+                        client["ACRoomsAmount"] = result[0].StayAmount;
                     }else{
-                        client["nonAC"] = result[0];
+                        client["nonACRooms"] = result[0].count;
+                        client["nonACRoomsAmount"] = result[0].StayAmount;
                     }
                     if (result[1]._id == false) {
-                        client["nonAC"] = result[1];
+                        client["nonACRooms"] = result[1].count;
+                        client["nonACRoomsAmount"] = result[1].StayAmount;
                     }else{
-                        client["AC"] = result[1];
+                        client["ACRooms"] = result[1].count;
+                        client["ACRoomsAmount"] = result[1].StayAmount;
                     }
-                }
+                }   
 
-                const obj = {};
-                    if (client.AC) {
-                        obj["ACRooms"] = client.AC.count;
-                        obj["ACRoomsAmount"] = JSON.parse(client.AC.StayAmount) + JSON.parse(client.AC.Advance);
-                    } else{
-                        obj["ACRooms"] = 0;
-                        obj["ACRoomsAmount"] = 0;
-                    }
-                    if (client.nonAC) {
-                        obj["nonACRooms"] = client.nonAC.count;
-                        obj["nonACRoomsAmount"] = JSON.parse(client.nonAC.StayAmount) + JSON.parse(client.nonAC.Advance);
-                    } else{
-                        obj["nonACRooms"] = 0;
-                        obj["nonACRoomsAmount"] = 0;
-                    }
-                    
-
-                // Transaction.aggregate([ 
-                //     {$match: {$and:[
-                //         {$nor: [ { status: "Pending" } ]},
-                //         {$or: [ 
-                //             search, // uncomment this to get dynamic result according to date_filter
+                Transaction.aggregate([ 
+                    {$match: {$and:[
+                        {$nor: [ { status: "Pending" } ]},
+                        {$or: [ 
+                            search, // uncomment this to get dynamic result according to date_filter
                             
-                //             {updatedAt : {$gte: new Date(new Date().setHours(00, 00, 00)),$lt: new Date(new Date().setHours(23, 59, 59))}}
-                //             ]}
-                //         ]}},
-                //     {
-                //         $group: { 
-                //         "_id": '$type',
-                //         Total:{$sum:'$amount'},
-                //      }} 
-                //     ]).then(transactionsCount => {
-                //         console.log(transactionsCount);
-                //     })
-                console.log(client);
-                res.json(obj);
+                            {updatedAt : {$gte: new Date(new Date().setHours(00, 00, 00)),$lt: new Date(new Date().setHours(23, 59, 59))}}
+                            ]}
+                        ]}},
+                    {
+                        $group: { 
+                        "_id": '$type',
+                        Total:{$sum:'$amount'},
+                     }} 
+                    ]).then(transactionsCount => {
+                        let debit = 0;
+                        let credit = 0;
+                        if(transactionsCount.length == 1){
+                            if (transactionsCount[0]._id == "debit") {
+                                debit = transactionsCount[0].Total;
+                            }else 
+                                credit = transactionsCount[0].Total;
+                        }
+                        else if(transactionsCount.length == 2){
+                            if (transactionsCount[0]._id == "debit") {
+                                debit = transactionsCount[0].Total;
+                            }else{
+                                credit = transactionsCount[0].Total;
+                            }
+                            if (transactionsCount[1]._id == "debit") {
+                                debit = transactionsCount[1].Total;
+                            }else{
+                                credit = transactionsCount[1].Total;
+                            }
+                        }
+                        client["TodayBusiness"] = credit - debit;
+                        res.json(client);
+                    })
                     
             })
             
