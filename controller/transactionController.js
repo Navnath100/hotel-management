@@ -411,8 +411,12 @@ async function todayBusiness(req,res,next) {
              }} 
             ]).then(result => {
                 // console.log(result);
-                if (result.length == 0) 
-                    res.json({error:"Entries not found for today."});
+                if (result.length == 0){
+                    client["ACRooms"] = 0;
+                    client["ACRoomsAmount"] = 0;
+                    client["nonACRooms"] = 0;
+                    client["nonACRoomsAmount"] = 0;
+                }
                 else if(result.length == 1){
                     if (result[0]._id == true) {
                         client["ACRooms"] = result[0].count;
@@ -472,6 +476,9 @@ async function todayBusiness(req,res,next) {
                             }else{
                                 credit = transactionsCount[1].Total;
                             }
+                        }else{
+                            debit = 0;
+                            credit = 0;
                         }
                         client["TodayBusiness"] = credit - debit;
 
@@ -490,8 +497,14 @@ async function todayBusiness(req,res,next) {
                                 count: { $sum: 1 }
                              }} 
                             ]).then(staffExpenses=>{
-                                client["staffExpenses"] = staffExpenses[0].Total;
-                                client["staffExpensesCount"] = staffExpenses[0].count;
+                                console.log(staffExpenses);
+                                if (staffExpenses.length != 0) {
+                                    client["staffExpenses"] = staffExpenses[0].Total;
+                                    client["staffExpensesCount"] = staffExpenses[0].count;
+                                } else {
+                                    client["staffExpenses"] = 0;
+                                    client["staffExpensesCount"] = 0;
+                                }
                                 res.json(client);
                             })
                     })
