@@ -442,9 +442,9 @@ async function todayBusiness(req,res,next) {
                     {$match: {$and:[
                         {$nor: [ { status: "Pending" } ]},
                         {$or: [ 
-                            search, // uncomment this to get dynamic result according to date_filter
+                            // search, // uncomment this to get dynamic result according to date_filter
                             
-                            {updatedAt : {$gte: new Date(new Date().setHours(00, 00, 00)),$lt: new Date(new Date().setHours(23, 59, 59))}}
+                            {createdAt : {$gte: new Date(new Date().setHours(00, 00, 00)),$lt: new Date(new Date().setHours(23, 59, 59))}}
                             ]}
                         ]}},
                     {
@@ -474,28 +474,27 @@ async function todayBusiness(req,res,next) {
                             }
                         }
                         client["TodayBusiness"] = credit - debit;
-                    })
 
-                    Transaction.aggregate([ 
-                        {$match: {$and:[
-                            {transactionFor:"staff-expense"},
-                            {$or: [
-                                    // search, // uncomment this to get dynamic result according to date_filter
-                                    {createdAt : {$gte: new Date(new Date().setHours(00, 00, 00)),$lt: new Date(new Date().setHours(23, 59, 59))}}
-                                ]}
-                            ]}},
-                        {
-                            $group: { 
-                            "_id": '$transactionFor',
-                            Total:{$sum:'$amount'},
-                            count: { $sum: 1 }
-                         }} 
-                        ]).then(staffExpenses=>{
-                            client["staffExpenses"] = staffExpenses[0].Total;
-                            client["staffExpensesCount"] = staffExpenses[0].count;
-                            res.json(client);
-                        })
-                    
+                        Transaction.aggregate([ 
+                            {$match: {$and:[
+                                {transactionFor:"staff-expense"},
+                                {$or: [
+                                        // search, // uncomment this to get dynamic result according to date_filter
+                                        {createdAt : {$gte: new Date(new Date().setHours(00, 00, 00)),$lt: new Date(new Date().setHours(23, 59, 59))}}
+                                    ]}
+                                ]}},
+                            {
+                                $group: { 
+                                "_id": '$transactionFor',
+                                Total:{$sum:'$amount'},
+                                count: { $sum: 1 }
+                             }} 
+                            ]).then(staffExpenses=>{
+                                client["staffExpenses"] = staffExpenses[0].Total;
+                                client["staffExpensesCount"] = staffExpenses[0].count;
+                                res.json(client);
+                            })
+                    })
             })
             
         }else
