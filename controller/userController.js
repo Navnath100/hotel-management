@@ -123,6 +123,10 @@ async function userLogin(req,res,next) {
             res.status(422);
             return next(new Error("Your account is disabled"));
         }
+        if(user.status == "Pending"){
+            res.status(422);
+            return next(new Error("Your account is pending"));
+        }
         //password verification
         const isPasswordMatched = hashPassword.verify(password,user.password)
         if(isPasswordMatched){
