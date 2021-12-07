@@ -60,10 +60,10 @@ async function createUsers(req,res,next) {
 
 
     
-    // if(empData.password.search(/[0-9]/) == -1){
-    //     res.status(400);
-    //     return next(new Error("Password must contain atleast 6 characters"))
-    // }
+    if(empData.password.search(/[0-9]/) == -1){
+        res.status(400);
+        return next(new Error("Password must contain atleast 6 characters"))
+    }
     // else if(empData.password.search(/[a-z]/) == -1){
     //     res.status(400);
     //     return next(new Error("Password must contain one lower case character"))
@@ -76,10 +76,10 @@ async function createUsers(req,res,next) {
     //     res.status(400);
     //     return next(new Error("Password must contain special character"))
     // }
-    // else if(empData.password != empData.confirmPassword){
-    //     res.status(400);
-    //     return next(new Error("Password and confirm password doesn't match"))
-    // }
+    else if(empData.password != empData.confirmPassword){
+        res.status(400);
+        return next(new Error("Password and confirm password doesn't match"))
+    }
 
     let empEmailValidation = await User.findOne({email : empData.email});
     if(empEmailValidation){
