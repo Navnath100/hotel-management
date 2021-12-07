@@ -421,9 +421,10 @@ async function todayBusiness(req,res,next) {
                     if (result[0]._id == true) {
                         client["ACRooms"] = result[0].count;
                         client["ACRoomsAmount"] = result[0].StayAmount;
-                    }else 
+                    }else {
                         client["nonACRooms"] = result[0].count;
                         client["nonACRoomsAmount"] = result[0].StayAmount;
+                    }
                 }
                 else if(result.length == 2){
                     if (result[0]._id == true) {

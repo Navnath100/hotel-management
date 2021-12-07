@@ -125,7 +125,7 @@ async function userLogin(req,res,next) {
         }
         if(user.status == "Pending"){
             res.status(422);
-            return next(new Error("Your account is pending"));
+            return next(new Error("Your account activation is pending!"));
         }
         //password verification
         const isPasswordMatched = hashPassword.verify(password,user.password)
