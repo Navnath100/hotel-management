@@ -1,10 +1,5 @@
 const multer = require('multer');
 const AWS = require('aws-sdk');
-const region = "Asia Pacific (Mumbai) ap-south-1"
-const AWS_ID = "";
-const AWS_SECRET = "";
-const AWS_BUCKET_NAME = "sadguru-lodge";
-const uuid = require('uuid')
 
 const s3 = new AWS.S3({
     region:"ap-south-1",
