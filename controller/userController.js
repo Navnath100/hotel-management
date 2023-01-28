@@ -1,7 +1,7 @@
 // const { sendNotification , sendEmail } = require('../middlewares/notification')
 
-const joi=require('joi')
-const jwt=require('jsonwebtoken')
+const joi = require('joi')
+const jwt = require('jsonwebtoken')
 const hashPassword = require('password-hash');
 const { Collection, isValidObjectId } = require("mongoose");
 const crypto = require('crypto');
@@ -9,9 +9,9 @@ const { User } = require('../models/users')
 const { ObjectId } = require('mongodb')
 
 // /api/users/
-async function getUsers(req,res,next) {
+async function getUsers(req, res, next) {
     try {
-        User.find().sort({ createdAt: -1 }).then(async(data)=>{
+        User.find().sort({ createdAt: -1 }).then(async (data) => {
             const count = await User.find().countDocuments();
             if (data) {
                 res.json(data)
@@ -21,15 +21,15 @@ async function getUsers(req,res,next) {
     } catch (error) {
         return next(new Error(error))
     }
-    
+
 }
 
 // /api/users/
-async function getUserInfo(req,res,next) {
+async function getUserInfo(req, res, next) {
     try {
         const id = req.params.id;
-        User.findOne({_id:ObjectId(id)}).then(data=>{
-            if(data)
+        User.findOne({ _id: ObjectId(id) }).then(data => {
+            if (data)
                 res.json(data)
         });
     } catch (error) {
@@ -38,29 +38,29 @@ async function getUserInfo(req,res,next) {
 }
 
 // /api/user/
-async function createUsers(req,res,next) {
+async function createUsers(req, res, next) {
 
     let schema = joi.object({
-        name:joi.string().min(1).max(60).required(),
-        phone:joi.string().length(10).pattern(/^[0-9]+$/).required(),
-        email:joi.object({emailID:joi.string().required(),status:joi.string(),resetToken:joi.string(),expireToken:joi.date()}),
-        password:joi.string().min(6).max(18).required(),
-        confirmPassword:joi.string().min(6).max(18).required(),
-        profilePic:joi.string()
+        name: joi.string().min(1).max(60).required(),
+        phone: joi.string().length(10).pattern(/^[0-9]+$/).required(),
+        email: joi.object({ emailID: joi.string().required(), status: joi.string(), resetToken: joi.string(), expireToken: joi.date() }),
+        password: joi.string().min(6).max(18).required(),
+        confirmPassword: joi.string().min(6).max(18).required(),
+        profilePic: joi.string()
     })
     let result = schema.validate(req.body)
 
-    if(result.error){
+    if (result.error) {
         res.status(400);
         return next(new Error(result.error.details[0].message))
     }
-    
+
     const empData = result.value;
     const specialCharacterFormat = /[ `!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
 
 
-    
-    if(empData.password.search(/[0-9]/) == -1){
+
+    if (empData.password.search(/[0-9]/) == -1) {
         res.status(400);
         return next(new Error("Password must contain atleast 6 characters"))
     }
@@ -76,23 +76,23 @@ async function createUsers(req,res,next) {
     //     res.status(400);
     //     return next(new Error("Password must contain special character"))
     // }
-    else if(empData.password != empData.confirmPassword){
+    else if (empData.password != empData.confirmPassword) {
         res.status(400);
         return next(new Error("Password and confirm password doesn't match"))
     }
 
-    let empEmailValidation = await User.findOne({email : empData.email});
-    if(empEmailValidation){
+    let empEmailValidation = await User.findOne({ email: empData.email });
+    if (empEmailValidation) {
         res.status(400);
         return next(new Error("Email already registered"))
     }
 
-    let empPhoneValidation = await User.findOne({phone : empData.phone});
-    if(empPhoneValidation){
+    let empPhoneValidation = await User.findOne({ phone: empData.phone });
+    if (empPhoneValidation) {
         res.status(400);
         return next(new Error("Phone number already registered"))
     }
-    
+
     empData.password = hashPassword.generate(empData.password)
     try {
         const emp = await new User(empData).save();
@@ -103,55 +103,109 @@ async function createUsers(req,res,next) {
 }
 
 // /api/user/login
-async function userLogin(req,res,next) {
+async function userLogin(req, res, next) {
     let schema = joi.object({
-        phone:joi.string().length(10).pattern(/^[0-9]+$/).required(),
-        password:joi.string().required(),
-        fcmToken:joi.string()
+        phone: joi.string().length(10).pattern(/^[0-9]+$/).required(),
+        password: joi.string().required(),
+        fcmToken: joi.string()
     })
     let result = schema.validate(req.body)
 
-    if(result.error){
+    if (result.error) {
         res.status(400);
         return next(new Error(result.error.details[0].message));
     }
 
-    const {phone , password , fcmToken} = result.value;
-    User.findOne({phone}).then(async(user)=>{ 
-       if(user){
-        if(user.status == "Disabled"){
-            res.status(422);
-            return next(new Error("Your account is disabled"));
-        }
-        if(user.status == "Pending"){
-            res.status(422);
-            return next(new Error("Your account activation is pending!"));
-        }
-        //password verification
-        const isPasswordMatched = hashPassword.verify(password,user.password)
-        if(isPasswordMatched){
-            const payload ={
-                _id : user._id,
-                status : user.status
+    const { phone, password, fcmToken } = result.value;
+    User.findOne({ phone }).then(async (user) => {
+        if (user) {
+            if (user.status == "Disabled") {
+                res.status(422);
+                return next(new Error("Your account is disabled"));
             }
-            const token = jwt.sign(payload,"123456")
-            res.json({message:"Login Success",token})
-            if(req.body.fcmToken)
-           {
-               User.findOneAndUpdate({phone}, {$push:{fcmTokens:fcmToken}}, {new: false},async (err, doc) =>{
-                if(err)
-                    console.log("error: ",err);
-            })
+            if (user.status == "Pending") {
+                res.status(422);
+                return next(new Error("Your account activation is pending!"));
+            }
+            //password verification
+            const isPasswordMatched = hashPassword.verify(password, user.password)
+            if (isPasswordMatched) {
+                const payload = {
+                    _id: user._id,
+                    status: user.status
+                }
+                const token = jwt.sign(payload, "123456")
+                res.json({ message: "Login Success", token })
+                if (req.body.fcmToken) {
+                    User.findOneAndUpdate({ phone }, { $push: { fcmTokens: fcmToken } }, { new: false }, async (err, doc) => {
+                        if (err)
+                            console.log("error: ", err);
+                    })
+                }
+            } else {
+                res.status(401);
+                return next(new Error("Authentication Failed!"));
+            }
+        } else {
+            res.status(403);
+            return next(new Error("Phone number is not registered"));
         }
-        }else{
-            res.status(401);
-            return next(new Error ("Authentication Failed!"));
-        }
-    }else{
-        res.status(403);
-        return next(new Error ("Phone number is not registered"));
-    }
     })
 }
 
-module.exports = { getUsers,createUsers,userLogin,getUserInfo }
+// /api/user/status
+async function changeAccountStatus(req, res, next) {
+    let schema = joi.object({
+        status: joi.string(),
+        id: joi.string()
+    })
+    let result = schema.validate(req.body)
+    const requestById = req.params.id;
+    if (result.error) {
+        res.status(400);
+        return next(new Error(result.error.details[0].message));
+    }
+
+    const { id } = result.value;
+    let status = result.value.status
+    if (status === 'Disable') status = "Disabled"
+    User.findOne({ _id: requestById }).then(async (user) => {
+        if (user) {
+            if (user.status == "Disabled") {
+                res.status(422);
+                return next(new Error("Your account is disabled"));
+            }
+            if (user.status == "Pending") {
+                res.status(422);
+                return next(new Error("Your account activation is pending!"));
+            }
+            if (!user.isAdmin) {
+                res.status(401);
+                return next(new Error("Unauthorized access is denied"));
+            }
+            if (status === "Active" || status === "Disabled" || status === "Pending") {
+                User.findByIdAndUpdate(id, { status },
+                    function (err, docs) {
+                        if (err) {
+                            res.status(404);
+                            return next(new Error("User not found"));
+                        }
+                        else {
+                            res.status(200);
+                            res.json({ ...docs._doc, status });
+                        }
+                    })
+            }
+            else {
+                res.status(400);
+                return next(new Error("Unknown status received"));
+            }
+        } else {
+            res.status(404);
+            return next(new Error("User not found"));
+        }
+    })
+}
+
+
+module.exports = { getUsers, createUsers, userLogin, getUserInfo, changeAccountStatus }
