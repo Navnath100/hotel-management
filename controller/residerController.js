@@ -143,10 +143,13 @@ async function getResiders(req, res, next) {
                 $lte: new Date(lastDayOfYear).setHours(23, 59, 59)
             }
         }
-        search.createdAt.$gte = new Date(search.createdAt.$gte) - (330 * 60000)
-        search.createdAt.$lte = new Date(search.createdAt.$lte) - (330 * 60000)
-        // console.log("start date : ", new Date(search.createdAt.$gte).toString());
-        // console.log("end date : ", new Date(search.createdAt.$lte).toString());
+
+        if (search && search.createdAt && search.createdAt.$gte) {
+            search.createdAt.$gte = new Date(search.createdAt.$gte) - (330 * 60000);
+            search.createdAt.$lte = new Date(search.createdAt.$lte) - (330 * 60000);
+            console.log("start date : ", new Date(search.createdAt.$gte).toString());
+            console.log("end date : ", new Date(search.createdAt.$lte).toString());
+        }
         const result = {}
         result["total"] = await Resider.find(search).countDocuments();
         // result["AC"] = await Resider.find({ $and: [search, { isAC: true }, { $or: [{ "status": "checked-in" }, { "status": "checked-out" }] }] }).countDocuments();
