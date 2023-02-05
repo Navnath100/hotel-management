@@ -57,17 +57,15 @@ async function getResiders(req, res, next) {
         if (name && name != "null") search["residers.name"] = name;
         if (isAC && isAC != "null") search.isAC = isAC;
         if (status && status != "null") search.status = status;
-        const utcStart = new Date(new Date().setHours(00, 00, 00)) - (330 * 60000);
-        const utcEnd = new Date(new Date().setHours(23, 59, 59)) - (330 * 60000);
+
         if (date_filter == "today") {
             search.createdAt = {
                 // $gte: new Date().setHours(00, 00, 00),
                 // $lte: new Date().setHours(23, 59, 59)
-                $gte: new Date(utcStart),
-                $lte: new Date(utcEnd)
+                $gte: new Date(new Date().setHours(00, 00, 00)) - (330 * 60000),
+                $lte: new Date(new Date().setHours(23, 59, 59)) - (330 * 60000)
             }
         }
-        console.log(search.createdAt);
 
         const dt = new Date();
         const day = dt.getDay();
@@ -99,7 +97,7 @@ async function getResiders(req, res, next) {
             const lastWeeksunday = new Date().setDate(new Date().getDate() + n - 1);
             search.createdAt = {
                 $gte: new Date(lastWeekMonday).setHours(00, 00, 00),
-                $lt: new Date(lastWeeksunday).setHours(23, 59, 59)
+                $lte: new Date(lastWeeksunday).setHours(23, 59, 59)
             }
         }
 
@@ -110,7 +108,7 @@ async function getResiders(req, res, next) {
             const lastDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), daysInMonth);
             search.createdAt = {
                 $gte: new Date(firstDayOfMonth).setHours(00, 00, 00),
-                $lt: new Date(lastDayOfMonth).setHours(23, 59, 59)
+                $lte: new Date(lastDayOfMonth).setHours(23, 59, 59)
             }
         }
 
@@ -120,7 +118,7 @@ async function getResiders(req, res, next) {
             const lastDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() - 1, daysInMonth);
             search.createdAt = {
                 $gte: new Date(firstDayOfMonth).setHours(00, 00, 00),
-                $lt: new Date(lastDayOfMonth).setHours(23, 59, 59)
+                $lte: new Date(lastDayOfMonth).setHours(23, 59, 59)
             }
         }
 
@@ -133,7 +131,7 @@ async function getResiders(req, res, next) {
             const lastDayOfMonth = new Date(year + "-" + month + "-" + currentDate.getDate());
             search.createdAt = {
                 $gte: new Date(firstDayOfMonth).setHours(00, 00, 00),
-                $lt: new Date(lastDayOfMonth).setHours(23, 59, 59)
+                $lte: new Date(lastDayOfMonth).setHours(23, 59, 59)
             }
         }
 
@@ -144,10 +142,13 @@ async function getResiders(req, res, next) {
             const lastDayOfYear = new Date(year + "-" + 12 + "-" + 31);
             search.createdAt = {
                 $gte: new Date(firstDayOfYear).setHours(00, 00, 00),
-                $lt: new Date(lastDayOfYear).setHours(23, 59, 59)
+                $lte: new Date(lastDayOfYear).setHours(23, 59, 59)
             }
         }
-
+        search.createdAt.$gte = new Date(search.createdAt.$gte) - (330 * 60000)
+        search.createdAt.$lte = new Date(search.createdAt.$lte) - (330 * 60000)
+        console.log("start date : ", new Date(search.createdAt.$gte).toString());
+        console.log("end date : ", new Date(search.createdAt.$lte).toString());
         const result = {}
         result["total"] = await Resider.find(search).countDocuments();
         // result["AC"] = await Resider.find({ $and: [search, { isAC: true }, { $or: [{ "status": "checked-in" }, { "status": "checked-out" }] }] }).countDocuments();
