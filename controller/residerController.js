@@ -57,8 +57,8 @@ async function getResiders(req, res, next) {
         if (name && name != "null") search["residers.name"] = name;
         if (isAC && isAC != "null") search.isAC = isAC;
         if (status && status != "null") search.status = status;
-        const utcStart = new Date(new Date().setHours(00, 00, 00));
-        const utcEnd = new Date(new Date().setHours(12, 59, 59));
+        const utcStart = new Date(new Date().setHours(00, 00, 00)) - (330 * 60000);
+        const utcEnd = new Date(new Date().setHours(23, 59, 59)) - (330 * 60000);
         if (date_filter == "today") {
             search.createdAt = {
                 // $gte: new Date().setHours(00, 00, 00),
@@ -67,7 +67,6 @@ async function getResiders(req, res, next) {
                 $lte: new Date(utcEnd)
             }
         }
-
         console.log(search.createdAt);
 
         const dt = new Date();
