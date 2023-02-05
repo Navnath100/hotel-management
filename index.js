@@ -51,6 +51,7 @@ application.use((req, res, next) => {
 const port = process.env.PORT || 5000
 const { Transaction } = require('./models/transactions')
 
+
 // logic to get latest balance
 // Transaction.find().sort({_id:-1}).limit(1).then(doc => {
 //     console.log(doc[0]);
@@ -67,7 +68,7 @@ application.listen(port, () => {
 // application.use(ApiAuthorization)
 const APIRouter = express.Router()
 application.use('/api', APIRouter)
-APIRouter.get('/',(req,res,next)=>{res.json("Api is working...!")})
+APIRouter.get('/', (req, res, next) => { res.json("Api is working...!") })
 APIRouter.use('/user', userRouter)
 APIRouter.use('/resider', residerRouter)
 APIRouter.use('/staff-expenses', staffExpensesRouter)
