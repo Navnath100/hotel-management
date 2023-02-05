@@ -60,10 +60,8 @@ async function getResiders(req, res, next) {
 
         if (date_filter == "today") {
             search.createdAt = {
-                // $gte: new Date().setHours(00, 00, 00),
-                // $lte: new Date().setHours(23, 59, 59)
-                $gte: new Date(new Date().setHours(00, 00, 00)) - (330 * 60000),
-                $lte: new Date(new Date().setHours(23, 59, 59)) - (330 * 60000)
+                $gte: new Date().setHours(00, 00, 00),
+                $lte: new Date().setHours(23, 59, 59)
             }
         }
 
@@ -88,7 +86,7 @@ async function getResiders(req, res, next) {
         if (date_filter == "this-week") {
             search.createdAt = {
                 $gte: new Date(monday).setHours(00, 00, 00),
-                $lt: new Date()
+                $lte: new Date()
             }
         }
 
@@ -147,8 +145,8 @@ async function getResiders(req, res, next) {
         }
         search.createdAt.$gte = new Date(search.createdAt.$gte) - (330 * 60000)
         search.createdAt.$lte = new Date(search.createdAt.$lte) - (330 * 60000)
-        console.log("start date : ", new Date(search.createdAt.$gte).toString());
-        console.log("end date : ", new Date(search.createdAt.$lte).toString());
+        // console.log("start date : ", new Date(search.createdAt.$gte).toString());
+        // console.log("end date : ", new Date(search.createdAt.$lte).toString());
         const result = {}
         result["total"] = await Resider.find(search).countDocuments();
         // result["AC"] = await Resider.find({ $and: [search, { isAC: true }, { $or: [{ "status": "checked-in" }, { "status": "checked-out" }] }] }).countDocuments();
