@@ -52,6 +52,7 @@ const port = process.env.PORT || 5000
 const { Transaction } = require('./models/transactions')
 
 
+console.log("new Date()", new Date());
 // logic to get latest balance
 // Transaction.find().sort({_id:-1}).limit(1).then(doc => {
 //     console.log(doc[0]);

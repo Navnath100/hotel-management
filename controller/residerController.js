@@ -57,16 +57,18 @@ async function getResiders(req, res, next) {
         if (name && name != "null") search["residers.name"] = name;
         if (isAC && isAC != "null") search.isAC = isAC;
         if (status && status != "null") search.status = status;
-        const utcStart = new Date(new Date(new Date().setHours(00, 00, 00)).toUTCString()).getTime() - (330 * 60000);
-        const utcEnd = new Date(new Date(new Date().setHours(23, 59, 59)).toUTCString()).getTime() - (330 * 60000);
+        const utcStart = new Date(new Date().setHours(00, 00, 00)).toUTCString();
+        const utcEnd = new Date(new Date().setHours(23, 59, 59)).toUTCString();
         if (date_filter == "today") {
             search.createdAt = {
                 // $gte: new Date().setHours(00, 00, 00),
                 // $lte: new Date().setHours(23, 59, 59)
-                $gte: utcStart,
-                $lte: utcEnd
+                $gte: new Date(utcStart).toISOString(),
+                $lte: new Date(utcEnd).toISOString()
             }
         }
+
+        console.log(search.createdAt);
 
         const dt = new Date();
         const day = dt.getDay();
