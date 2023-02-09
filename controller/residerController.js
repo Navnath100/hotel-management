@@ -422,7 +422,7 @@ async function checkOut(req, res, next) {
                                             Total Bill amount : ${JSON.parse(amount) + totalExpenses} . <br>
                                             Advance : -${doc.advance ? doc.advance : 0}. <br>
                                             remaining amount = ${doc.advance ? (JSON.parse(amount) + totalExpenses) - doc.advance : JSON.parse(amount) + totalExpenses}. <br>
-                                            Please don’t hesitate to contact us on {9999999999} for any concern.`;
+                                            Please don’t hesitate to contact us on +918286789757 for any concern.`;
                             const to = [resider.email.emailID];
                             sendCheckOutEmail(sub, body, to);
                             // sendSMS(resider.name,amount+totalExpenses,resider.phone);
@@ -627,7 +627,7 @@ async function verifyOtp(req, res, next) {
         return next(new Error(error))
     }
 }
-//api/residers/edit-phone
+//api/resider/edit-phone
 async function editPhone(req, res, next) {
     try {
         let schema = joi.object({
