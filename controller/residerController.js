@@ -184,8 +184,8 @@ async function addResider(req, res, next) {
             number: joi.string().min(10).max(10).pattern(/^[0-9]+$/).required()
         }).required(),
         email: joi.object({
-            emailID: joi.string().required()
-        }).required(),
+            emailID: joi.string()
+        }),
     })
     let result = schema.validate(req.body)
     if (result.error) {
@@ -213,7 +213,7 @@ async function addResider(req, res, next) {
                     }
                 });
             }
-            const resider = new Resider(residerData).save().then(async (resider) => {
+            new Resider(residerData).save().then(async (resider) => {
                 // const checkinTime = (new Date(resider.checkIn.time).getTime())+(330*60*1000);
                 // const sub = `${resider.name}_ has checked in`;
                 // const body = `<h1>Custmer Details</h1>
@@ -227,15 +227,17 @@ async function addResider(req, res, next) {
                 // const to = "navnathphapale100@gmail.com";
                 // sendEmail(sub,body,to);
                 // residerCount++;
-                const data = {
-                    _id: JSON.stringify(resider._id),
-                    // phone:resider.phone.number,
-                    phone: resider.email.emailID,
-                    sendRes: false
+                if (resider.email.emailID) {
+                    const data = {
+                        _id: JSON.stringify(resider._id),
+                        // phone:resider.phone.number,
+                        phone: resider.email.emailID,
+                        sendRes: false
+                    }
+                    req.body = data;
+                    req.params = { id: user._id }
+                    sendOtp(req, res, next)
                 }
-                req.body = data;
-                req.params = { id: user._id }
-                sendOtp(req, res, next)
                 res.json(resider);
             });
         } else if (!user)
@@ -298,7 +300,8 @@ async function checkIn(req, res, next) {
                 const checkIn = { by: req.params.id, time: new Date() }
                 console.log(checkIn);
                 Resider.findOne({ $and: [{ _id: residerData._id }] }).then(resider1 => {
-                    if (!resider1.phone.isVerified && !resider1.email.emailID) {
+                    // Remove false to enable email or phone verification mandatory
+                    if (!resider1.phone.isVerified && !resider1.email.emailID && false) {
                         return next(new Error("Could not process for check in due to unverified phone no and emailID"))
                     }
                     // else if (resider1.status == "checked-in") {
@@ -322,16 +325,18 @@ async function checkIn(req, res, next) {
                         }
                         Resider.findOneAndUpdate({ _id: residerData._id }, { $set: update }, { new: true }, (err, doc) => {
                             if (doc) {
-                                const sub = `Checked in room no.${doc.roomNo}`;
-                                const body = `<h1>Checked In Successfully</h1>
-                                <p>Dear customer, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
-                                Your Check In is confirmed and your per day cost will be Rs.${doc.amountPerDay}. 
-                                Please don’t hesitate to contact us on {9999999999} for any concern.`;
-                                const to = [doc.email.emailID];
-                                for (let i = 0; i < doc.residers.length; i++) {
-                                    to.push(doc.residers[i].email.emailID);
+                                if (false) { // Change this false to business settings of sending email on check in
+                                    const sub = `Checked in room no.${doc.roomNo}`;
+                                    const body = `<h1>Checked In Successfully</h1>
+                                    <p>Dear customer, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
+                                    Your Check In is confirmed and your per day cost will be Rs.${doc.amountPerDay}. 
+                                    Please don’t hesitate to contact us on {9999999999} for any concern.`;
+                                    const to = [doc.email.emailID];
+                                    for (let i = 0; i < doc.residers.length; i++) {
+                                        to.push(doc.residers[i].email.emailID);
+                                    }
+                                    sendEmail(sub, body, to);
                                 }
-                                sendEmail(sub, body, to);
                                 res.json(doc);
                             } else if (err) {
                                 console.log("Error Found !bug inside residerController.js->checkIn() ", err);
@@ -415,16 +420,18 @@ async function checkOut(req, res, next) {
                     Resider.findOneAndUpdate({ _id: residerID }, { $set: { status: "checked-out", checkOut: { by: req.params.id, time: new Date().toISOString() } }, bill: Bill }, { new: true }, (err, doc) => {
                         if (doc) {
                             res.json(doc);
-                            const sub = `Checked out from room no.${resider.roomNo}_ successfully`;
-                            const body = `<h1>Checked Out Successfully</h1>
-                                            <p>Dear ${"Guest"}, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
-                                            Your checkout is confirmed.<br>
-                                            Total Bill amount : ${JSON.parse(amount) + totalExpenses} . <br>
-                                            Advance : -${doc.advance ? doc.advance : 0}. <br>
-                                            remaining amount = ${doc.advance ? (JSON.parse(amount) + totalExpenses) - doc.advance : JSON.parse(amount) + totalExpenses}. <br>
-                                            Please don’t hesitate to contact us on +918286789757 for any concern.`;
-                            const to = [resider.email.emailID];
-                            sendCheckOutEmail(sub, body, to);
+                            if (resider.email.emailID) {
+                                const sub = `Checked out from room no.${resider.roomNo}_ successfully`;
+                                const body = `<h1>Checked Out Successfully</h1>
+                                                <p>Dear ${"Guest"}, We are honored that you have chosen to stay with us.Thank you for visiting us at Sadguru Lodge.
+                                                Your checkout is confirmed.<br>
+                                                Total Bill amount : ${JSON.parse(amount) + totalExpenses} . <br>
+                                                Advance : -${doc.advance ? doc.advance : 0}. <br>
+                                                remaining amount = ${doc.advance ? (JSON.parse(amount) + totalExpenses) - doc.advance : JSON.parse(amount) + totalExpenses}. <br>
+                                                Please don’t hesitate to contact us on +918286789757 for any concern.`;
+                                const to = [resider.email.emailID];
+                                sendCheckOutEmail(sub, body, to);
+                            }
                             // sendSMS(resider.name,amount+totalExpenses,resider.phone);
                             // const transactionData = {
                             //     amount :doc.advance ? (doc.bill.Net_Payment_amount)-doc.advance : doc.bill.Net_Payment_amount,
@@ -504,10 +511,11 @@ async function addExpense(req, res, next) {
 
                                 addTransaction(transactionData).then(transactionResult => {
                                     if (transactionResult) {
-                                        return next(new Error(transactionResult))
                                         console.log(transactionResult);
-                                    } else
-                                        res.json({ Success: "Added Successfully" });
+                                        return next(new Error(transactionResult))
+                                    }
+                                    // else
+                                    //     res.json({ Success: "Added Successfully" });
                                 });
                                 res.json(doc);
                             } else if (err) {

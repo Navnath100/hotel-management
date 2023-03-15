@@ -52,7 +52,6 @@ const port = process.env.PORT || 5000
 const { Transaction } = require('./models/transactions')
 
 
-console.log("new Date()", new Date());
 // logic to get latest balance
 // Transaction.find().sort({_id:-1}).limit(1).then(doc => {
 //     console.log(doc[0]);
@@ -75,23 +74,5 @@ APIRouter.use('/resider', residerRouter)
 APIRouter.use('/staff-expenses', staffExpensesRouter)
 APIRouter.use('/transaction', transactionRouter)
 APIRouter.use('/balance', balanceRouter)
-
-// APIRouter.use('/tickets', ticketRouter)
-
-// APIRouter.use('/locations', locationRouter)
-
-// APIRouter.use('/machines', machineRouter)
-
-// APIRouter.use('/factories', factoryRouter)
-
-// APIRouter.use('/ticketComments', ticketCommentRouter)
-
-// APIRouter.use('/tasks', taskRouter)
-
-// APIRouter.use('/schedules', scheduleRouter)
-
-// APIRouter.use('/taskComments', taskCommentRouter)
-
-// APIRouter.use('/images', imageRouter)
 
 application.use(handleErrors)

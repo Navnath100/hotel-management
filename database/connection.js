@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 
-const DB_URL = 'mongodb+srv://Navnath:enter-password@cluster0.hqyaq.mongodb.net/Sadguru-Lodge?retryWrites=true&w=majority'
+// const DB_URL = 'mongodb+srv://Navnath:enter-password@cluster0.hqyaq.mongodb.net/Sadguru-Lodge?retryWrites=true&w=majority'
+const DB_URL = 'mongodb+srv://Navnath:enter-password@cluster0.hqyaq.mongodb.net/devDB?retryWrites=true&w=majority'
 async function createConnection(params, next) {
     try {
         await mongoose.connect(DB_URL, {
