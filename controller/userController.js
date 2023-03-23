@@ -137,10 +137,7 @@ async function userLogin(req, res, next) {
                 const token = jwt.sign(payload, "123456")
                 res.json({ message: "Login Success", token })
                 if (req.body.fcmToken) {
-                    User.findOneAndUpdate({ phone }, { $push: { fcmTokens: fcmToken } }, { new: false }, async (err, doc) => {
-                        if (err)
-                            console.log("error: ", err);
-                    })
+                    User.findOneAndUpdate({ phone }, { $push: { fcmTokens: fcmToken } }, { new: false }, async (err, doc) => { })
                 }
             } else {
                 res.status(401);

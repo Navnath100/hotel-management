@@ -139,7 +139,6 @@ async function getTransactions(req, res, next) {
                         for (let i = 0; i < transactions.length; i++)
                             todayExpenses += transactions[i].charges
                     }
-                    console.log(transactions);
                     res.json(transactions);
                 });
 
@@ -190,7 +189,6 @@ async function addTransaction(body) {
             return new Error(err)
         })
     } catch (error) {
-        console.log(error);
         return new Error(error)
     }
 
@@ -205,12 +203,11 @@ async function addFirstTransaction() {
             type: "credit", // debit/credit
             description: "First Tansaction"
         }).save().then(transaction => {
-            console.log("transaction : ", transaction);
         }).catch(error => {
-            console.log(error);
+            return next(new Error(error))
         });
     } catch (error) {
-        console.log(error);
+        return next(new Error(error))
     }
 
 }
@@ -239,7 +236,6 @@ async function addStaffExpense(req, res, next) {
         addTransaction(transactionData).then(transactionResult => {
             if (transactionResult) {
                 return next(new Error(transactionResult))
-                console.log(transactionResult);
             } else
                 res.json({ Success: "Added Successfully" });
         });
@@ -261,7 +257,6 @@ async function withdrawal(req, res, next) {
         }
         const { phone, password, amount } = result.value;
         User.findOne({ _id: req.params.id, phone }).then(user => {
-            console.log(user);
             if (user && user.status == "Disabled") {
                 res.status(422);
                 return next(new Error("Your account is disabled"));
@@ -285,7 +280,6 @@ async function withdrawal(req, res, next) {
                     if (balance[0].availableBalance < transactionData.amount) {
                         return next(new Error("Transaction could not be done due to low balance"))
                     } else {
-                        // console.log(transactionData);
                         addTransaction(transactionData).then(transactionResult => {
                             if (transactionResult) {
                                 return next(new Error(transactionResult))
@@ -425,7 +419,6 @@ async function todayBusiness(req, res, next) {
                         }
                     }
                 ]).then(result => {
-                    // console.log(result);
                     if (result.length == 0) {
                         client["ACRooms"] = 0;
                         client["ACRoomsAmount"] = 0;
@@ -527,7 +520,6 @@ async function todayBusiness(req, res, next) {
                                 }
                             }
                         ]).then(staffExpenses => {
-                            console.log(staffExpenses);
                             if (staffExpenses.length != 0) {
                                 client["staffExpenses"] = staffExpenses[0].Total;
                                 client["staffExpensesCount"] = staffExpenses[0].count;
@@ -547,7 +539,6 @@ async function todayBusiness(req, res, next) {
         })
 
     } catch (error) {
-        console.log(error);
         return next(new Error(error))
     }
 }

@@ -46,7 +46,6 @@ async function addExpense(req,res,next) {
         })
     
     } catch (error) {
-        console.log(error);
         return next(new Error(error))
     }
 }
@@ -75,7 +74,6 @@ async function todayStaffExpenses(req,res,next) {
         })
     
     } catch (error) {
-        console.log(error);
         return next(new Error(error))
     }
 }

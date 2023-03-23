@@ -298,7 +298,6 @@ async function checkIn(req, res, next) {
         User.findOne({ _id: req.params.id }).then(user => {
             if (user && user.status == "Active") {
                 const checkIn = { by: req.params.id, time: new Date() }
-                console.log(checkIn);
                 Resider.findOne({ $and: [{ _id: residerData._id }] }).then(resider1 => {
                     // Remove false to enable email or phone verification mandatory
                     if (!resider1.phone.isVerified && !resider1.email.emailID && false) {
@@ -339,15 +338,15 @@ async function checkIn(req, res, next) {
                                 }
                                 res.json(doc);
                             } else if (err) {
-                                console.log("Error Found !bug inside residerController.js->checkIn() ", err);
+                                // console.log("Error Found !bug inside residerController.js->checkIn() ", err);
                                 res.json(err);
                                 // return next(new Error(err));
                             } else {
-                                console.log("Else block executed !bug inside residerController.js->checkIn()->line 354");
+                                // console.log("Else block executed !bug inside residerController.js->checkIn()->line 354");
                                 return next(new Error("Something went wrong!Either you didn't entered right resider _id or phone no. which is verified"))
                             }
                         }).catch(err => {
-                            console.log("Error caught !bug inside residerController.js->checkIn()->line 354");
+                            // console.log("Error caught !bug inside residerController.js->checkIn()->line 354");
                             return next(new Error(err))
                         });
                     }
@@ -360,7 +359,7 @@ async function checkIn(req, res, next) {
         })
 
     } catch (error) {
-        console.log("Error caught !bug inside residerController.js->checkIn()->line 361 : ", error);
+        // console.log("Error caught !bug inside residerController.js->checkIn()->line 361 : ", error);
         return next(new Error(result.error.details[0].message))
     }
 }
@@ -511,7 +510,6 @@ async function addExpense(req, res, next) {
 
                                 addTransaction(transactionData).then(transactionResult => {
                                     if (transactionResult) {
-                                        console.log(transactionResult);
                                         return next(new Error(transactionResult))
                                     }
                                     // else
@@ -520,7 +518,6 @@ async function addExpense(req, res, next) {
                                 res.json(doc);
                             } else if (err) {
                                 res.json(err);
-                                console.log(err);
                                 // return next(new Error(err));
                             }
                         });
@@ -537,7 +534,6 @@ async function addExpense(req, res, next) {
         })
 
     } catch (error) {
-        console.log(error);
         return next(new Error(error))
     }
 }
@@ -567,13 +563,12 @@ async function sendOtp(req, res, next) {
                         const body = `<h3>Your OTP is ${OTP}.It will expire in 10 minutes</h3>`;
                         const to = [phone];
                         sendEmail(sub, body, to);
-                        console.log(sub, body, to);
                         if (sendRes) {
                             res.json({ success: "OTP sent successfully" })
                         }
                         // sendSMS(resider.name,amount+totalExpenses,resider.phone);
                     } else if (err) {
-                        console.log("Error while sending otp : " + err);
+                        //handle error
                     } else {
                         return next(new Error("Something went wrong!Either you have entered wrong resider _id or phone no.", err));
                     }
@@ -824,10 +819,10 @@ async function getImage(req, res, next) {
     try {
         const key = req.params.key
         const readStream = getFileStream(key)
-        console.log("readStream : ", readStream);
+        // console.log("readStream : ", readStream);
         readStream.pipe(res);
     } catch (error) {
-        console.log("Error Caught in residerController.js -> getImage()", error);
+        // console.log("Error Caught in residerController.js -> getImage()", error);
         // return next(new Error("Error Caught in residerController.js -> getImage()"))
     }
 }
